@@ -1,16 +1,20 @@
+import io
 import json
 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from openpyxl import Workbook
+from openpyxl.styles import Font
 from streamlit_autorefresh import st_autorefresh
 
 # ---------------------------
 # НАСТРОЙКА СТРАНИЦЫ STREAMLIT
 # ---------------------------
 # Конфигурируем параметры страницы: заголовок, иконку и ширину макета
-st.set_page_config(page_title="Аналитика Чат-Бота", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Аналитика Чат-Бота",
+                   page_icon="🤖", layout="wide")
 
 # ---------------------------
 # CSS-ХАК ДЛЯ КНОПОК СКАЧИВАНИЯ
@@ -34,6 +38,64 @@ button[data-testid="stDownloadButton"] {
 # Устанавливаем интервал автоперезагрузки (в данном случае 10 секунд)
 time_interval = 10
 st_autorefresh(interval=time_interval * 1000, key="data_refresh")
+
+
+def make_headers_bold(ws):
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+
+def set_manual_column_widths(ws):
+    column_widths = {
+        "A": 40, "B": 50, "C": 20, "D": 30, "E": 30, "F": 50, "G": 70
+    }
+    for col_letter, width in column_widths.items():
+        ws.column_dimensions[col_letter].width = width
+
+
+def create_excel_file(normal, bad, unsure):
+    wb = Workbook()
+    headers = [
+        "Вопрос", "Ответ AI", "Категория вопроса",
+        "user_filters", "question_filters", "Очищенный контекст", "Все контексты"
+    ]
+
+    def make_headers_bold(ws):
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+
+    def set_manual_column_widths(ws):
+        column_widths = {
+            "A": 40, "B": 50, "C": 20, "D": 30, "E": 30, "F": 50, "G": 70
+        }
+        for col_letter, width in column_widths.items():
+            ws.column_dimensions[col_letter].width = width
+
+    def fill_sheet(ws, data, title):
+        ws.title = title
+        ws.append(headers)
+        make_headers_bold(ws)
+        for case in data:
+            ws.append([
+                case.get("question", ""),
+                case.get("answer", ""),
+                case.get("question_category", ""),
+                ", ".join(case.get("user_filters", [])),
+                ", ".join(case.get("question_filters", [])),
+                case.get("ground_truth", ""),
+                "\n---\n".join(case.get("contexts", []))
+            ])
+        set_manual_column_widths(ws)
+
+    ws1 = wb.active
+    fill_sheet(ws1, normal, "Вопросы с ответом")
+    fill_sheet(wb.create_sheet(), bad, "Вопросы без ответа")
+    fill_sheet(wb.create_sheet(), unsure, "Частичный ответ")
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
 
 
 # ---------------------------
@@ -66,7 +128,8 @@ def process_data(data):
 
     # Если есть столбец chat_history, вычисляем метрики по истории чата
     if "chat_history" in df.columns:
-        df["has_chat_history"] = df["chat_history"].apply(lambda x: len(x.get("old_questions", [])) > 0)
+        df["has_chat_history"] = df["chat_history"].apply(
+            lambda x: len(x.get("old_questions", [])) > 0)
         df["conflict_metric"] = df.apply(
             lambda row: 1 if (len(row.get("chat_history", {}).get("old_questions", [])) > 1
                               and row["response_time"] > 3) else 0,
@@ -74,7 +137,8 @@ def process_data(data):
         )
     # Если нет chat_history, но есть contexts, делаем аналогичные вычисления
     elif "contexts" in df.columns:
-        df["has_contexts"] = df["contexts"].apply(lambda x: len(x) > 0 if isinstance(x, list) else False)
+        df["has_contexts"] = df["contexts"].apply(
+            lambda x: len(x) > 0 if isinstance(x, list) else False)
         df["conflict_metric"] = df.apply(
             lambda row: 1 if (row["has_contexts"] and len(row.get("contexts", [])) > 1
                               and row["response_time"] > 3) else 0,
@@ -186,7 +250,8 @@ class Plots:
         """
         if self.data.empty or "campus" not in self.data.columns or "response_time" not in self.data.columns:
             return st.info("Нет данных для построения графика")
-        group_data = self.data.groupby("campus")["response_time"].mean().reset_index()
+        group_data = self.data.groupby(
+            "campus")["response_time"].mean().reset_index()
         if group_data.empty:
             return st.info("Нет данных для построения графика")
         fig = px.bar(
@@ -209,7 +274,8 @@ class Plots:
             return st.info("Нет данных для построения графика")
         df_copy = self.data.copy()
         df_copy["group"] = df_copy.index // bin_size
-        grouped = df_copy.groupby("group")["response_time"].mean().reset_index()
+        grouped = df_copy.groupby(
+            "group")["response_time"].mean().reset_index()
         fig = px.bar(
             grouped,
             x="group",
@@ -267,7 +333,8 @@ class Plots:
         """
         if self.data.empty or "question_category" not in self.data.columns or "response_time" not in self.data.columns:
             return st.info("Нет данных для построения графика")
-        grouped = self.data.groupby("question_category")["response_time"].mean().reset_index()
+        grouped = self.data.groupby("question_category")[
+            "response_time"].mean().reset_index()
         if grouped.empty:
             return st.info("Нет данных для построения графика")
         fig = px.bar(
@@ -327,7 +394,8 @@ class Plots:
         # Создаем 5 колонок для отображения графиков в одной строке
         cols = st.columns(5)
         for i, metric in enumerate(metrics):
-            grouped = self.data.groupby("question_category")[metric].mean().reset_index()
+            grouped = self.data.groupby("question_category")[
+                metric].mean().reset_index()
             fig = px.bar(
                 grouped,
                 x="question_category",
@@ -369,7 +437,8 @@ class Plots:
         ]
 
         # Группировка данных по категориям вопросов и вычисление средних значений для каждой метрики
-        grouped = self.data.groupby("question_category")[metrics].mean().reset_index()
+        grouped = self.data.groupby("question_category")[
+            metrics].mean().reset_index()
 
         # Масштабирование значений каждой метрики к диапазону [0, 100] для корректного сравнения
         for metric in metrics:
@@ -416,12 +485,17 @@ def sidebar_layout(df: pd.DataFrame):
     )
     st.sidebar.title("Фильтры")
 
-    campuses = df["campus"].dropna().unique().tolist() if "campus" in df.columns else []
-    categories = df["question_category"].dropna().unique().tolist() if "question_category" in df.columns else []
-    education_levels = df["education_level"].dropna().unique().tolist() if "education_level" in df.columns else []
+    campuses = df["campus"].dropna().unique(
+    ).tolist() if "campus" in df.columns else []
+    categories = df["question_category"].dropna().unique(
+    ).tolist() if "question_category" in df.columns else []
+    education_levels = df["education_level"].dropna().unique(
+    ).tolist() if "education_level" in df.columns else []
 
-    selected_campus = st.sidebar.multiselect("Выберите кампус", campuses, default=campuses)
-    selected_category = st.sidebar.multiselect("Выберите категорию вопроса", categories, default=categories)
+    selected_campus = st.sidebar.multiselect(
+        "Выберите кампус", campuses, default=campuses)
+    selected_category = st.sidebar.multiselect(
+        "Выберите категорию вопроса", categories, default=categories)
     selected_edu_level = st.sidebar.multiselect("Выберите уровень образования", education_levels,
                                                 default=education_levels)
 
@@ -429,11 +503,27 @@ def sidebar_layout(df: pd.DataFrame):
     if "campus" in df.columns:
         filtered_df = filtered_df[filtered_df["campus"].isin(selected_campus)]
     if "question_category" in df.columns:
-        filtered_df = filtered_df[filtered_df["question_category"].isin(selected_category)]
+        filtered_df = filtered_df[filtered_df["question_category"].isin(
+            selected_category)]
     if "education_level" in df.columns:
-        filtered_df = filtered_df[filtered_df["education_level"].isin(selected_edu_level)]
+        filtered_df = filtered_df[filtered_df["education_level"].isin(
+            selected_edu_level)]
 
     return filtered_df
+
+
+# --- Excel: подготовка и экспорт ---
+def split_by_answer_quality(data):
+    normal, bad, unsure = [], [], []
+    for case in data:
+        answer = case.get("answer", "")
+        if not answer.strip():
+            bad.append(case)
+        elif any(x in answer.lower() for x in ["возможно", "не уверен", "не могу сказать"]):
+            unsure.append(case)
+        else:
+            normal.append(case)
+    return normal, bad, unsure
 
 
 # ---------------------------
@@ -459,11 +549,26 @@ def main():
     graphs = Plots(filtered_df)
 
     # Заголовок приложения
-    st.markdown("<h1 style='text-align: center;'>Мониторинг качества чат-бота</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'>Мониторинг качества чат-бота</h1>",
+                unsafe_allow_html=True)
 
     # Кнопка для скачивания отфильтрованных данных в формате JSON
     st.markdown("### Экспорт данных")
-    download_json(filtered_df.to_dict(orient="records"))
+
+    col1, col2 = st.columns(2)
+    with col1:
+        download_json(filtered_df.to_dict(orient="records"))
+    with col2:
+        normal_q, bad_q, unsure_q = split_by_answer_quality(
+            filtered_df.to_dict(orient="records"))
+        excel_file = create_excel_file(normal_q, bad_q, unsure_q)
+
+        st.download_button(
+            label="📥 Скачать Excel",
+            data=excel_file,
+            file_name="chatbot_logs.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     # --- 1) Отдельные графики для метрик качества ---
     st.markdown("## Отдельные метрики качества")
