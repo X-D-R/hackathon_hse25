@@ -112,7 +112,7 @@ def answer_correctness_neural(
         num_layers=11,
     )["f1"]
 
-    return score
+    return score[0]
 
 
 class ValidatorSimple:
