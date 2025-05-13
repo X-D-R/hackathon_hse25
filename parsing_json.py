@@ -4,6 +4,7 @@ from typing import Dict, Any
 import pandas as pd
 
 from prepocess_calculate.metrics import *
+from profiling import Profiler
 
 
 class LogsAnalyzer:
@@ -35,8 +36,8 @@ class LogsAnalyzer:
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
-            'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),
-            'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer)
+            'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),  # time narrow space
+            'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer)  # time narrow space
         }
 
         if include_time:
@@ -75,7 +76,12 @@ class LogsAnalyzer:
             print("Unsupported format")
 
 
-if __name__ == "__main__":
+def main():
     log_obj = LogsAnalyzer()
     data = log_obj.parse_all_data("logs/new_logs.json")
     log_obj.export_data(data, output_name="result", extension="xlsx")
+
+
+if __name__ == "__main__":
+    profiler = Profiler(output_dir="profiling_results")
+    profiler.run_with_profiling(main)

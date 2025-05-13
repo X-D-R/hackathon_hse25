@@ -54,3 +54,4 @@ watchdog==6.0.0
 
 evaluate~=0.4.3
 tqdm~=4.67.1
+seaborn~=0.13.2
