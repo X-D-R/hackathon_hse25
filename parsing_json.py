@@ -4,6 +4,7 @@ from typing import Dict, Any
 import pandas as pd
 
 from prepocess_calculate.metrics import *
+from profiling import Profiler
 
 
 class LogsAnalyzer:
@@ -75,7 +76,12 @@ class LogsAnalyzer:
             print("Unsupported format")
 
 
-if __name__ == "__main__":
+def main():
     log_obj = LogsAnalyzer()
     data = log_obj.parse_all_data("logs/new_logs.json")
     log_obj.export_data(data, output_name="result", extension="xlsx")
+
+
+if __name__ == "__main__":
+    profiler = Profiler(output_file="profile_results")
+    profiler.run_with_profiling(main)
