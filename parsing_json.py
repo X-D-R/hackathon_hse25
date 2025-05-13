@@ -1,6 +1,7 @@
 import json
 import re
 from typing import Dict, Any
+import pandas as pd
 
 from prepocess_calculate.metrics import *
 
@@ -20,7 +21,7 @@ class LogsAnalyzer:
         """Парсинг всех данных"""
         return self._parse_data(file_path, include_time=True)
 
-    def parse_item(self, item: Dict, include_time: bool):
+    def parse_item(self, item: Dict, metric_obj: MetricsCalculator, include_time: bool):
         context = self._clean_text(" ".join(item['chat_history']['cleaned_contexts']))
         answer = self._clean_text(item['chat_history']['old_answers'][0])
         parsed = {
@@ -34,8 +35,8 @@ class LogsAnalyzer:
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
-            'answer_correctness_literal': answer_correctness_literal(context, answer),
-            'answer_correctness_neural': answer_correctness_neural(context, answer)
+            'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),
+            'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer)
         }
 
         if include_time:
@@ -53,9 +54,10 @@ class LogsAnalyzer:
         except (FileNotFoundError, json.JSONDecodeError) as e:
             raise
 
+        metric_obj = MetricsCalculator()
         result = []
         for item in data:
-            result.append(self.parse_item(item, include_time))
+            result.append(self.parse_item(item, metric_obj, include_time))
 
         return result
 
@@ -76,4 +78,4 @@ class LogsAnalyzer:
 if __name__ == "__main__":
     log_obj = LogsAnalyzer()
     data = log_obj.parse_all_data("logs/new_logs.json")
-    log_obj.export_data(data, extension="xlsx")
+    log_obj.export_data(data, output_name="result", extension="xlsx")
