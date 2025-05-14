@@ -2,9 +2,9 @@ Filename: C:\Users\User\PycharmProjects\hackathon_hse25_2\profiling.py
 
 Line #    Mem usage    Increment  Occurrences   Line Contents
 =============================================================
-    94    361.9 MiB    361.9 MiB           1           @profile(stream=fp)
+    94    362.0 MiB    362.0 MiB           1           @profile(stream=fp)
     95                                                 def wrapper(*args, **kwargs):
-    96    398.1 MiB     36.2 MiB           1               result = func(*args, **kwargs)
-    97    398.1 MiB      0.0 MiB           1               return result
+    96    391.8 MiB     29.7 MiB           1               result = func(*args, **kwargs)
+    97    391.8 MiB      0.0 MiB           1               return result
 
 
