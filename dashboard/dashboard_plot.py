@@ -1,0 +1,209 @@
+import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
+
+
+def show_plot_with_download_below(fig, filename: str):
+    st.plotly_chart(fig, use_container_width=True)
+    try:
+        img_bytes = fig.to_image(format="png")
+        st.download_button(
+            label="Скачать график",
+            data=img_bytes,
+            file_name=f"{filename}.png",
+            mime="image/png"
+        )
+    except Exception as e:
+        st.error(f"Ошибка экспорта: {e}")
+
+
+class Plots:
+    def __init__(self, data):
+        self.data = data
+
+    def plot_pie_chart(self, column: str, _unused_title: str):
+        if self.data.empty or column not in self.data.columns or self.data[column].dropna().empty:
+            return st.info("Нет данных для построения графика")
+        counts = self.data[column].value_counts()
+        fig = px.pie(
+            names=counts.index,
+            values=counts.values,
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.RdBu
+        )
+        show_plot_with_download_below(fig, f"pie_{column}")
+
+    def plot_bar_chart(self, column: str, _unused_title: str, x_label: str, y_label: str):
+        if self.data.empty or column not in self.data.columns or self.data[column].dropna().empty:
+            return st.info("Нет данных для построения графика")
+        counts = self.data[column].value_counts()
+        if counts.empty:
+            return st.info("Нет данных для построения графика")
+        fig = px.bar(
+            x=counts.index,
+            y=counts.values,
+            labels={'x': x_label, 'y': y_label},
+            text_auto=True,
+            color_discrete_sequence=px.colors.qualitative.Vivid
+        )
+        show_plot_with_download_below(fig, f"bar_{column}")
+
+    def plot_response_time_chart_with_campus(self):
+        if self.data.empty or "campus" not in self.data.columns or "response_time" not in self.data.columns:
+            return st.info("Нет данных для построения графика")
+        group_data = self.data.groupby(
+            "campus")["response_time"].mean().reset_index()
+        if group_data.empty:
+            return st.info("Нет данных для построения графика")
+        fig = px.bar(
+            group_data,
+            x="campus",
+            y="response_time",
+            color="campus",
+            text_auto=True,
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        show_plot_with_download_below(fig, "resp_time_by_campus")
+
+    def plot_averaged_response_time_chart(self, bin_size: int = 10):
+        if self.data.empty or "response_time" not in self.data.columns:
+            return st.info("Нет данных для построения графика")
+        df_copy = self.data.copy()
+        df_copy["group"] = df_copy.index // bin_size
+        grouped = df_copy.groupby(
+            "group")["response_time"].mean().reset_index()
+        fig = px.bar(
+            grouped,
+            x="group",
+            y="response_time",
+            labels={"group": f"Номер группы (по {bin_size} запросов)",
+                    "response_time": "Среднее время ответа (сек)"}
+        )
+        show_plot_with_download_below(fig, "resp_time_averaged")
+
+    def plot_follow_up_pie_chart(self):
+        if self.data.empty:
+            return st.info("Нет данных для построения графика")
+        flag = "has_chat_history" if "has_chat_history" in self.data.columns else "has_contexts"
+        if flag not in self.data.columns or self.data[flag].dropna().empty:
+            return st.info("Нет данных для построения графика")
+        avg_flag = self.data[flag].mean()
+        fig = px.pie(
+            names=["Без уточнений", "С уточнениями"],
+            values=[1 - avg_flag, avg_flag],
+            hole=0.3,
+            color_discrete_sequence=px.colors.qualitative.Pastel
+        )
+        show_plot_with_download_below(fig, "follow_up_pie")
+
+    def plot_conflict_metric(self):
+        if self.data.empty or "conflict_metric" not in self.data.columns:
+            return st.info("Нет данных для построения графика")
+        conflict_rate = self.data["conflict_metric"].mean() * 100
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=conflict_rate,
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': "red"},
+                'steps': [{'range': [0, 100], 'color': "lightcoral"}],
+            }
+        ))
+        show_plot_with_download_below(fig, "conflict_metric")
+
+    def plot_response_time_by_category(self):
+        if self.data.empty or "question_category" not in self.data.columns or "response_time" not in self.data.columns:
+            return st.info("Нет данных для построения графика")
+        grouped = self.data.groupby("question_category")[
+            "response_time"].mean().reset_index()
+        if grouped.empty:
+            return st.info("Нет данных для построения графика")
+        fig = px.bar(
+            grouped,
+            x="question_category",
+            y="response_time",
+            color_discrete_sequence=px.colors.qualitative.Pastel
+        )
+        show_plot_with_download_below(fig, "resp_time_by_category")
+
+    def plot_response_time_boxplot(self):
+        if self.data.empty or "response_time" not in self.data.columns:
+            return st.info("Нет данных для построения графика")
+        fig = px.box(
+            self.data,
+            y="response_time",
+            color_discrete_sequence=["#FF6666"]
+        )
+        show_plot_with_download_below(fig, "resp_time_boxplot")
+
+    def plot_quality_metrics_separate(self):
+        needed_cols = [
+            "question_category",
+            "context_recall",
+            "context_precision",
+            "answer_correctness_literal",
+            "answer_correctness_neural",
+            "Hallucination_metric"
+        ]
+        for c in needed_cols:
+            if c not in self.data.columns:
+                return st.info(f"Нет столбца '{c}' для построения метрик.")
+
+        metrics = needed_cols[1:]
+        cols = st.columns(len(metrics))
+        for i, metric in enumerate(metrics):
+            grouped = self.data.groupby("question_category")[
+                metric].mean().reset_index()
+            fig = px.bar(
+                grouped,
+                x="question_category",
+                y=metric,
+                labels={"question_category": "Категория вопроса",
+                        metric: "Среднее значение"},
+                title=f"Метрика: {metric}"
+            )
+            with cols[i]:
+                show_plot_with_download_below(fig, f"separate_{metric}")
+
+    def plot_quality_metrics_combined(self):
+        needed_cols = [
+            "question_category",
+            "context_recall",
+            "context_precision",
+            "answer_correctness_literal",
+            "answer_correctness_neural",
+            "Hallucination_metric"
+        ]
+        for c in needed_cols:
+            if c not in self.data.columns:
+                return st.info(f"Нет столбца '{c}' для построения метрик.")
+
+        metrics = needed_cols[1:]
+        grouped = self.data.groupby("question_category")[
+            metrics].mean().reset_index()
+
+        for metric in metrics:
+            max_val = grouped[metric].max()
+            if max_val > 0:
+                grouped[metric] = grouped[metric] / max_val * 100
+
+        melted = grouped.melt(
+            id_vars="question_category",
+            value_vars=metrics,
+            var_name="metric",
+            value_name="mean_value"
+        )
+
+        fig = px.bar(
+            melted,
+            x="question_category",
+            y="mean_value",
+            color="metric",
+            barmode="group",
+            labels={
+                "question_category": "Категория вопроса",
+                "mean_value": "Среднее (0–100)",
+                "metric": "Метрика"
+            }
+        )
+        show_plot_with_download_below(fig, "combined_quality_metrics")
