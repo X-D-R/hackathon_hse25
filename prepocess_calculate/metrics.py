@@ -2,6 +2,10 @@ from typing import List
 
 import evaluate
 import numpy as np
+import re
+from transformers import pipeline
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 class MetricsCalculator:
@@ -10,6 +14,10 @@ class MetricsCalculator:
         self.bleu = evaluate.load("bleu")
         self.chrf = evaluate.load("chrf")
         self.bertscore = evaluate.load("bertscore")
+        self.faithfulness_model = pipeline("text-classification",
+                                      model="MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+                                      return_all_scores=True)
+        self.relevance_model = SentenceTransformer("all-MiniLM-L6-v2")
 
     def context_recall(self, ground_truth: str, contexts: List[str]) -> float:
         """
@@ -112,3 +120,34 @@ class MetricsCalculator:
         )["f1"]
 
         return score[0]
+
+    def naive_text_fluency(self, answer: str) -> dict:
+        text_without_links = re.sub(r'http\S+|www\S+', '', answer)
+        sentences = re.split(r'[.!?]', text_without_links)
+        sentences = [s.strip() for s in sentences if s.strip()]
+        if not sentences:
+            return {
+                "avg_sentence_len": 0,
+                "unique_word_ratio": 0,
+                "word_count": 0,
+                "sentence_count": 0
+            }
+        words = re.findall(r'\b\w+\b', text_without_links.lower())
+        metrics = {
+            "sentence_count": len(sentences),
+            "word_count": len(words),
+            "avg_sentence_len": np.mean([len(re.findall(r'\b\w+\b', s)) for s in sentences]),
+            "unique_word_ratio": len(set(words)) / len(words) if words else 0
+        }
+        return metrics
+
+    def faithfulness_score(self, context: str, answer: str) -> dict:
+        result = self.faithfulness_model(f"{context} [SEP] {answer}")
+        faithfulness_scores = {item['label']: item['score'] for item in result[0]}
+        return faithfulness_scores
+
+    def answer_relevance(self, question: str, answer: str) -> float:
+        query_embedding = self.relevance_model.encode(question)
+        answer_embedding = self.relevance_model.encode(answer)
+        similarity = cosine_similarity([query_embedding], [answer_embedding])[0][0]
+        return similarity
