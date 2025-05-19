@@ -24,19 +24,30 @@ class LogsAnalyzer:
     def parse_item(self, item: Dict, metric_obj: MetricsCalculator, include_time: bool):
         context = self._clean_text(" ".join(item['chat_history']['cleaned_contexts']))
         answer = self._clean_text(item['chat_history']['old_answers'][0])
+        naive_text_fluency = metric_obj.naive_text_fluency(answer)
+        faithfulness_score = metric_obj.faithfulness_score(context, answer)
+        question = self._clean_text(item['chat_history']['old_questions'][0])
         parsed = {
             'selected_role': item['Выбранная роль'],
             'campus': item['Кампус'],
             'education_level': item['Уровень образования'],
             'question_category': item['Категория вопроса'],
-            'user_question': self._clean_text(item['chat_history']['old_questions'][0]),
+            'user_question': question,
             'user_filters': item['user_filters'],
             'question_filters': item['question_filters'],
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
+            'sentence_count': naive_text_fluency['sentence_count'],
+            'word_count': naive_text_fluency['word_count'],
+            'avg_sentence_len': naive_text_fluency['avg_sentence_len'],
+            'unique_word_ratio': naive_text_fluency['unique_word_ratio'],
+            'faithfulness_score_entailment': faithfulness_score['entailment'],
+            'faithfulness_score_neutral': faithfulness_score['neutral'],
+            'faithfulness_score_contradiction': faithfulness_score['contradiction'],
             'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),  # time narrow space
-            'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer)  # time narrow space
+            'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer),  # time narrow space
+            'answer_relevance': metric_obj.answer_relevance(question, answer)
         }
 
         if include_time:
@@ -77,6 +88,7 @@ class LogsAnalyzer:
 def main():
     log_obj = LogsAnalyzer()
     data = log_obj.parse_all_data("logs/new_logs.json")
+    log_obj.export_data(data, output_name="result", extension="xlsx")
     log_obj.export_data(data, output_name="result", extension="json")
 
 
@@ -105,8 +117,9 @@ def check_clean_text():
 
 
 if __name__ == "__main__":
-    profiler = Profiler(output_dir="profiling_results")
-    profiler.run_with_profiling(main)
+    main()
+    # profiler = Profiler(output_dir="profiling_results")
+    # profiler.run_with_profiling(main)
     # timer = timeit.Timer(lambda: main())
     # times = timer.repeat(repeat=1000, number=1)
     # print(f"Overall time: {sum(times)}")
