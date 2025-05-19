@@ -23,7 +23,14 @@ def main():
 
     # Загрузка данных из обновленного JSON-файла
     data = load_data("../output_last (1).json")
+    if not data:
+        st.stop()
+
     df = process_data(data)
+    if df.empty:
+        st.info("Не удалось обработать данные. Проверь входной файл.")
+        st.stop()
+
     filtered_df = sidebar_layout(df)
     if filtered_df.empty:
         st.info("Нет данных для отображения. Попробуйте изменить фильтры.")
