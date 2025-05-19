@@ -19,10 +19,10 @@ def main():
       - Графики основных метрик (распределение по кампусам, уровням образования и т.д.)
       - Графики, связанные с временем ответа и дополнительными метриками
     """
-    setup_page(refresh_interval=10)
+    setup_page(refresh_interval=60)
 
     # Загрузка данных из обновленного JSON-файла
-    data = load_data("../output_last (1).json")
+    data = load_data("../result.json")
     if not data:
         st.stop()
 
@@ -101,6 +101,19 @@ def main():
     graphs.plot_response_time_boxplot()
     st.subheader("Метрика конфликтного ответа")
     graphs.plot_conflict_metric()
+
+    # --- 7) Метрики по ответу и тексту ---
+    st.markdown("## Оценка пользователя")
+    graphs.plot_user_mark_distribution()
+
+    st.markdown("## Наивные текстовые метрики")
+    graphs.plot_naive_text_metrics()
+
+    st.markdown("## Верность ответа контексту")
+    graphs.plot_faithfulness_scores()
+
+    st.markdown("## Сходство ответа с контекстом")
+    graphs.plot_answer_correctness()
 
 
 if __name__ == "__main__":

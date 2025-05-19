@@ -1,3 +1,4 @@
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -139,18 +140,19 @@ class Plots:
     def plot_quality_metrics_separate(self):
         needed_cols = [
             "question_category",
-            "context_recall",
-            "context_precision",
+            "user_mark",
+            "faithfulness_score_entailment",
+            "faithfulness_score_neutral",
+            "faithfulness_score_contradiction",
             "answer_correctness_literal",
-            "answer_correctness_neural",
-            "Hallucination_metric"
+            "answer_correctness_neural"
         ]
         for c in needed_cols:
             if c not in self.data.columns:
                 return st.info(f"Нет столбца '{c}' для построения метрик.")
 
         metrics = needed_cols[1:]
-        cols = st.columns(len(metrics))
+        cols = st.columns(3)
         for i, metric in enumerate(metrics):
             grouped = self.data.groupby("question_category")[
                 metric].mean().reset_index()
@@ -158,21 +160,21 @@ class Plots:
                 grouped,
                 x="question_category",
                 y=metric,
-                labels={"question_category": "Категория вопроса",
-                        metric: "Среднее значение"},
-                title=f"Метрика: {metric}"
+                title=f"Метрика: {metric}",
+                labels={"question_category": "Категория", metric: "Среднее"}
             )
-            with cols[i]:
+            with cols[i % 3]:
                 show_plot_with_download_below(fig, f"separate_{metric}")
 
     def plot_quality_metrics_combined(self):
         needed_cols = [
             "question_category",
-            "context_recall",
-            "context_precision",
+            "user_mark",
+            "faithfulness_score_entailment",
+            "faithfulness_score_neutral",
+            "faithfulness_score_contradiction",
             "answer_correctness_literal",
-            "answer_correctness_neural",
-            "Hallucination_metric"
+            "answer_correctness_neural"
         ]
         for c in needed_cols:
             if c not in self.data.columns:
@@ -182,6 +184,7 @@ class Plots:
         grouped = self.data.groupby("question_category")[
             metrics].mean().reset_index()
 
+        # нормализуем в пределах [0; 100]
         for metric in metrics:
             max_val = grouped[metric].max()
             if max_val > 0:
@@ -190,20 +193,121 @@ class Plots:
         melted = grouped.melt(
             id_vars="question_category",
             value_vars=metrics,
-            var_name="metric",
-            value_name="mean_value"
+            var_name="Метрика",
+            value_name="Значение"
         )
 
         fig = px.bar(
             melted,
             x="question_category",
-            y="mean_value",
-            color="metric",
+            y="Значение",
+            color="Метрика",
             barmode="group",
-            labels={
-                "question_category": "Категория вопроса",
-                "mean_value": "Среднее (0–100)",
-                "metric": "Метрика"
-            }
+            title="Сводный график метрик качества",
+            labels={"question_category": "Категория",
+                    "Значение": "Среднее (0–100)"}
         )
         show_plot_with_download_below(fig, "combined_quality_metrics")
+
+    def plot_user_mark_distribution(self):
+        if self.data.empty or "user_mark" not in self.data.columns:
+            return st.info("Нет данных для оценки пользователей")
+        fig = px.histogram(
+            self.data,
+            x="user_mark",
+            nbins=3,
+            title="Распределение пользовательских оценок",
+            color_discrete_sequence=px.colors.qualitative.Pastel
+        )
+        fig.update_layout(xaxis_title="Оценка", yaxis_title="Количество")
+        show_plot_with_download_below(fig, "user_mark_distribution")
+
+    def plot_naive_text_metrics(self):
+        metrics = [
+            ("sentence_count", "Количество предложений"),
+            ("word_count", "Количество слов"),
+            ("avg_sentence_len", "Средняя длина предложения"),
+            ("unique_word_ratio", "Процент уникальных слов")
+        ]
+        rows = [st.columns(2), st.columns(2)]
+        for i, (colname, label) in enumerate(metrics):
+            if colname in self.data.columns:
+                with rows[i // 2][i % 2]:
+                    fig = px.histogram(
+                        self.data,
+                        x=colname,
+                        title=label,
+                        marginal="box",
+                        color_discrete_sequence=px.colors.qualitative.Plotly
+                    )
+                    fig.update_layout(showlegend=False)
+                    show_plot_with_download_below(fig, f"naive_{colname}")
+
+    def plot_faithfulness_scores(self):
+        cols = [
+            "faithfulness_score_entailment",
+            "faithfulness_score_neutral",
+            "faithfulness_score_contradiction"
+        ]
+        if any(c not in self.data.columns for c in cols):
+            return st.info("Отсутствуют показатели faithfulness_score")
+
+        melted = self.data[cols].copy()
+        melted["index"] = melted.index
+        melted = melted.melt(
+            id_vars="index", var_name="Тип", value_name="Значение")
+
+        fig = px.violin(
+            melted,
+            y="Значение",
+            x="Тип",
+            box=True,
+            points="all",
+            color="Тип",
+            title="Faithfulness Score — насколько ответ логически соответствует извлечённым документам",
+            color_discrete_sequence=px.colors.sequential.Blues_r
+        )
+        fig.update_layout(xaxis_title="Класс соответствия",
+                          yaxis_title="Вероятность")
+        show_plot_with_download_below(fig, "faithfulness_scores")
+
+    def plot_answer_correctness(self):
+        if "answer_correctness_literal" not in self.data.columns or "answer_correctness_neural" not in self.data.columns:
+            return st.info("Отсутствуют показатели answer_correctness")
+
+        try:
+            import statsmodels.api
+            fig = px.scatter(
+                self.data,
+                x="answer_correctness_literal",
+                y="answer_correctness_neural",
+                trendline="ols",
+                title="Сходство ответа с контекстом (лингвистическое vs семантическое)",
+                labels={
+                    "answer_correctness_literal": "Literal (лингвистическое)",
+                    "answer_correctness_neural": "Neural (семантическое)"
+                },
+                color_discrete_sequence=["#1f77b4"]  # насыщенный синий
+            )
+            fig.update_traces(selector=dict(mode="lines"),
+                              line=dict(width=3, color="orange"))
+        except ImportError:
+            st.warning(
+                "Модуль `statsmodels` не установлен — трендлиния не будет отображаться.")
+            fig = px.scatter(
+                self.data,
+                x="answer_correctness_literal",
+                y="answer_correctness_neural",
+                title="Сходство ответа с контекстом",
+                labels={
+                    "answer_correctness_literal": "Literal (лингвистическое)",
+                    "answer_correctness_neural": "Neural (семантическое)"
+                },
+                color_discrete_sequence=["#1f77b4"]
+            )
+
+        fig.update_layout(
+            xaxis_title="Лингвистическая схожесть",
+            yaxis_title="Семантическая схожесть"
+        )
+        show_plot_with_download_below(fig, "answer_correctness")
