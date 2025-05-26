@@ -17,6 +17,14 @@ class LogsAnalyzer:
             return ''
         return self.clean_text.sub(' ', text).strip()
 
+    def _extract_topic_tags(self, input_str: str):
+        pattern = re.compile(r"'topic_tag_\d+'\s*:\s*'([^']*)'")
+        matches = pattern.findall(input_str)
+        non_empty_tags = [tag.strip() for tag in matches if tag.strip()]
+
+        return non_empty_tags
+
+
     def parse_all_data(self, file_path: str) -> List[Dict[str, Any]]:
         """Парсинг всех данных"""
         return self._parse_data(file_path, include_time=True)
@@ -27,14 +35,18 @@ class LogsAnalyzer:
         naive_text_fluency = metric_obj.naive_text_fluency(answer)
         faithfulness_score = metric_obj.faithfulness_score(context, answer)
         question = self._clean_text(item['chat_history']['old_questions'][0])
+        user_filters = item['user_filters']
+        question_filters = item['question_filters']
+        model_filters = self._extract_topic_tags(" ".join(item['chat_history']['old_contexts']))
         parsed = {
             'selected_role': item['Выбранная роль'],
             'campus': item['Кампус'],
             'education_level': item['Уровень образования'],
             'question_category': item['Категория вопроса'],
             'user_question': question,
-            'user_filters': item['user_filters'],
-            'question_filters': item['question_filters'],
+            'user_filters': user_filters,
+            'question_filters': question_filters,
+            'model_filters': model_filters,
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
@@ -47,7 +59,9 @@ class LogsAnalyzer:
             'faithfulness_score_contradiction': faithfulness_score['contradiction'],
             'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),  # time narrow space
             'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer),  # time narrow space
-            'answer_relevance': metric_obj.answer_relevance(question, answer)
+            'answer_relevance': metric_obj.answer_relevance(question, answer),
+            'jaccard_similarity': metric_obj.jaccard_similarity(set(question_filters), set(model_filters)),
+            'cosine_tag_answer': metric_obj.cosine_tag_answer("".join(question_filters), answer)
         }
 
         if include_time:
