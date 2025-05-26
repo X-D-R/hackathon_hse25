@@ -151,3 +151,14 @@ class MetricsCalculator:
         answer_embedding = self.relevance_model.encode(answer)
         similarity = cosine_similarity([query_embedding], [answer_embedding])[0][0]
         return similarity
+
+    def jaccard_similarity(self, set1, set2):
+        intersection = len(set1.intersection(set2))
+        union = len(set1.union(set2))
+        return intersection / union if union != 0 else 0
+
+    def cosine_tag_answer(self, tag: str, answer: str) -> float:
+        query_embedding = self.relevance_model.encode(tag, convert_to_tensor=True)
+        answer_embedding = self.relevance_model.encode(answer, convert_to_tensor=True)
+        similarity = cosine_similarity(query_embedding.reshape(1, -1), answer_embedding.reshape(1, -1))[0][0]
+        return float(similarity)
