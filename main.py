@@ -1,10 +1,7 @@
 import streamlit as st
-from dashboard_export import (create_excel_file, download_json,
-                              split_by_answer_quality)
-from dashboard_plot import Plots
-from dashboard_ui import setup_page, sidebar_layout
-from dashboard_utils import load_data, process_data
 from streamlit_autorefresh import st_autorefresh
+
+from dashboard import *
 
 
 # ---------------------------
@@ -22,7 +19,7 @@ def main():
     setup_page(refresh_interval=60)
 
     # Загрузка данных из обновленного JSON-файла
-    data = load_data("../result.json")
+    data = load_data("result.json")
     if not data:
         st.stop()
 
