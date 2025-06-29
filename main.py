@@ -18,8 +18,7 @@ def main():
     """
     setup_page(refresh_interval=60)
 
-    # Загрузка данных из обновленного JSON-файла
-    data = load_data("result.json")
+    data = load_data("data/result.json")
     if not data:
         st.stop()
 

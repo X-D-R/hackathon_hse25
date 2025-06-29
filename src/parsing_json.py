@@ -101,9 +101,10 @@ class LogsAnalyzer:
 
 def main():
     log_obj = LogsAnalyzer()
-    data = log_obj.parse_all_data("logs/new_logs.json")
-    log_obj.export_data(data, output_name="result", extension="xlsx")
-    log_obj.export_data(data, output_name="result", extension="json")
+    data = log_obj.parse_all_data("../logs/new_logs.json")
+    folder = 'data/'
+    log_obj.export_data(data, output_name=f"{folder}result", extension="xlsx")
+    log_obj.export_data(data, output_name=f"{folder}result", extension="json")
 
 
 def check_export(data: List[Dict[str, Any]]):
