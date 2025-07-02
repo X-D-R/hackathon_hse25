@@ -54,6 +54,17 @@ def process_data(data: List[dict]) -> pd.DataFrame:
 
         df["response_time"] = pd.to_numeric(
             df.get("response_time", 0), errors="coerce")
+        
+        df["conflict_metric"] = 0
+
+        if "user_mark" in df.columns:
+            df.loc[df["user_mark"] < 0, "conflict_metric"] = 1
+
+        if "response_time" in df.columns:
+            df.loc[df["response_time"] > 10, "conflict_metric"] = 1
+
+        if "is_conflict" in df.columns:
+            df.loc[df["is_conflict"] == True, "conflict_metric"] = 1
         return df
 
     except Exception as e:
