@@ -37,9 +37,9 @@ status_color = show_system_alert(df)
 # палитры
 palette_map = {
     # custom_green_palette, #px.colors.sequential.Greens
-    "green": px.colors.qualitative.Pastel,
-    "yellow": px.colors.sequential.Oranges,
-    "red": px.colors.sequential.Reds,
+    "green": px.colors.sequential.YlGn_r,
+    "yellow": px.colors.sequential.Inferno_r,
+    "red": px.colors.sequential.YlOrRd_r,
     "blue": px.colors.sequential.Blues,
 }
 color_sequence = palette_map.get(status_color, px.colors.sequential.Blues)
