@@ -1,10 +1,12 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
+
 
 def show_system_alert(df: pd.DataFrame):
     total = len(df)
     conflicts = df["conflict_metric"].sum()
     percent = round(conflicts / total * 100, 1) if total else 0
+    color_code = "blue"
 
     # --- Цветовая индикация ---
     if percent < 10:
@@ -12,16 +14,19 @@ def show_system_alert(df: pd.DataFrame):
         border = "#28a745"
         emoji = "✅"
         msg = "Система работает стабильно"
+        color_code = "green"
     elif percent < 25:
         color = "#fff3cd"
         border = "#ffc107"
         emoji = "⚠️"
         msg = "Повышен уровень подозрительных ответов"
+        color_code = "yellow"
     else:
         color = "#f8d7da"
         border = "#dc3545"
         emoji = "🛑"
         msg = "Высокий процент ошибок. Необходима проверка"
+        color_code = "red"
 
     # --- Баннер ---
     st.markdown(f"""
@@ -78,5 +83,8 @@ def show_system_alert(df: pd.DataFrame):
         if merged.empty:
             st.info("Нет категорий с высоким уровнем конфликтов.")
         else:
-            st.warning("Обнаружены категории с повышенным уровнем подозрительных ответов:")
+            st.warning(
+                "Обнаружены категории с повышенным уровнем подозрительных ответов:")
             st.dataframe(merged, use_container_width=True)
+    return color_code 
+
