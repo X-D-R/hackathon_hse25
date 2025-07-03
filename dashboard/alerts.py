@@ -50,11 +50,11 @@ def show_system_alert(df: pd.DataFrame):
     # --- Раскрывающийся блок с деталями ---
     with st.expander("🔍 Подробнее: подозрительные ответы"):
         if conflicts == 0:
-            st.markdown("*Нет подозрительных ответов.*")
+            st.success("*Нет подозрительных ответов.*")
         else:
             st.dataframe(
                 df[df["conflict_metric"] == 1][
-                    ["user_question", "answer", "question_category", "response_time"]
+                    ["user_question", "answer", "question_category", "response_time", "user_mark"]
                 ].reset_index(drop=True),
                 use_container_width=True
             )
@@ -81,7 +81,7 @@ def show_system_alert(df: pd.DataFrame):
         merged = merged[merged["percent"] > 20]  # Порог
 
         if merged.empty:
-            st.info("Нет категорий с высоким уровнем конфликтов.")
+            st.success("Нет категорий с высоким уровнем конфликтов.")
         else:
             st.warning(
                 "Обнаружены категории с повышенным уровнем подозрительных ответов:")
