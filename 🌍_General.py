@@ -38,9 +38,18 @@ def main():
     }
     color_sequence = palette_map.get(status_color, px.colors.sequential.Blues)
 
+    color_map_for_bar = {
+        "green": "#28a745",
+        "yellow": "#ffc107",
+        "red": "#dc3545",
+        "blue": "#17becf"
+    }
+
     # --- Графики ---
 
     graphs = Plots(df, color_sequence=color_sequence)
+
+    graphs.plot_conflict_metric(color_map_for_bar.get(status_color, "red"))
 
     col1, col2 = st.columns(2)
     with col1:
@@ -50,15 +59,6 @@ def main():
     with col2:
         st.subheader("Среднее время ответа по категориям")
         graphs.plot_response_time_by_category()
-
-    st.markdown("### Метрика конфликтных ответов")
-    color_map_for_bar = {
-        "green": "#28a745",
-        "yellow": "#ffc107",
-        "red": "#dc3545",
-        "blue": "#17becf"
-    }
-    graphs.plot_conflict_metric(bar_color=color_map_for_bar.get(status_color))
 
 
 if __name__ == "__main__":

@@ -98,20 +98,29 @@ class Plots:
         )
         show_plot_with_download_below(fig, "follow_up_pie")
 
-    def plot_conflict_metric(self, bar_color=None):
-        bar_color = bar_color or "#FF6666"
+    def plot_conflict_metric(self, bar_color=None, background_color=None):
+        bar_color = bar_color or "#FF6666"  # цвет стрелки
+        background_color = background_color or "#222222"
+
         if self.data.empty or "conflict_metric" not in self.data.columns:
             return st.info("Нет данных для построения графика")
+
         conflict_rate = self.data["conflict_metric"].mean() * 100
+
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
             value=conflict_rate,
             gauge={
                 'axis': {'range': [0, 100]},
                 'bar': {'color': bar_color},
-                'steps': [{'range': [0, 100], 'color': "lightcoral"}],
-            }
+                'bgcolor': background_color,
+                'steps': [
+                    {'range': [0, 100], 'color': background_color}
+                ],
+            },
+            number={'font': {'color': bar_color}}
         ))
+
         show_plot_with_download_below(fig, "conflict_metric")
 
     def plot_response_time_by_category(self):
