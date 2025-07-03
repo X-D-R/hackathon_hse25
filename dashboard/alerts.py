@@ -86,5 +86,4 @@ def show_system_alert(df: pd.DataFrame):
             st.warning(
                 "Обнаружены категории с повышенным уровнем подозрительных ответов:")
             st.dataframe(merged, use_container_width=True)
-    return color_code 
-
+    return color_code

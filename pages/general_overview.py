@@ -22,17 +22,6 @@ if df.empty:
 # --- Плашка статуса и детализация ---
 status_color = show_system_alert(df)
 
-# custom_green_palette = [
-#     "#0b6623",  # тёмно-зелёный (глубокий)
-#     "#228B22",  # forest green
-#     "#2ecc71",  # flat UI green
-#     "#27ae60",
-#     "#58d68d",
-#     "#82e0aa",
-#     "#abebc6",
-#     "#d5f5e3"
-# ]
-
 
 # палитры
 palette_map = {

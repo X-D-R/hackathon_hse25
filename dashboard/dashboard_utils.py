@@ -54,7 +54,7 @@ def process_data(data: List[dict]) -> pd.DataFrame:
 
         df["response_time"] = pd.to_numeric(
             df.get("response_time", 0), errors="coerce")
-        
+
         df["conflict_metric"] = 0
 
         if "user_mark" in df.columns:
