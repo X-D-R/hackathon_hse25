@@ -14,7 +14,7 @@ pip install -r requirements.txt
 Перейдите в корневую папку.
 Для запуска проекта нужно выполнить команду:
 ```
-streamlit run dashboard.py
+streamlit run main.py
 ```
 ## Принцип работы проекта
 

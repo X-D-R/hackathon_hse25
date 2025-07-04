@@ -1,0 +1,31 @@
+# Python кэш и временные файлы
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+.venv
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Локальные конфиги Streamlit
+.streamlit/config.toml
+
+# Excel-файлы 
+*.xlsx
+
+hackaton_metrics1.ipynb
+hackaton_metrics2.ipynb
+
+src/
+profiling_results/
+preprocess_calculate/
