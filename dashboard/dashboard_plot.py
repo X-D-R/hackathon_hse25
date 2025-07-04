@@ -121,7 +121,7 @@ class Plots:
             number={'font': {'color': bar_color}}
         ))
 
-        show_plot_with_download_below(fig, "conflict_metric")
+        st.plotly_chart(fig, use_container_width=True)
 
     def plot_response_time_by_category(self):
         if self.data.empty or "question_category" not in self.data.columns or "response_time" not in self.data.columns:
@@ -134,6 +134,8 @@ class Plots:
             grouped,
             x="question_category",
             y="response_time",
+            text_auto=True,
+            labels={'question_category': '', 'response_time': 'Среднее время'},
             color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, "resp_time_by_category")
@@ -322,3 +324,21 @@ class Plots:
             yaxis_title="Семантическая схожесть"
         )
         show_plot_with_download_below(fig, "answer_correctness")
+
+    def plot_avg_user_mark_by_category(self):
+        if self.data.empty or "question_category" not in self.data.columns or "user_mark" not in self.data.columns:
+            return st.info("Нет данных для оценки по категориям")
+
+        grouped = self.data.groupby("question_category")[
+            "user_mark"].mean().reset_index()
+        grouped["user_mark"] = grouped["user_mark"].round(2)
+
+        fig = px.bar(
+            grouped,
+            x="question_category",
+            y="user_mark",
+            text_auto=True,
+            labels={'question_category': '', 'user_mark': 'Средняя оценка'},
+            color_discrete_sequence=self.color_sequence
+        )
+        show_plot_with_download_below(fig, "avg_user_mark_by_category")
