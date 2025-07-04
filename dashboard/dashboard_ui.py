@@ -2,13 +2,6 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 
-def set_logo():
-    st.sidebar.image(
-        "https://github.com/X-D-R/hackathon_hse25/raw/main/logo.png",
-        use_container_width=True
-    )
-
-
 def setup_page(refresh_interval: int = 10):
     # ---------------------------
     # НАСТРОЙКА СТРАНИЦЫ STREAMLIT

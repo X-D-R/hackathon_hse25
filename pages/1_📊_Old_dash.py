@@ -15,7 +15,6 @@ def main():
         - Графики, связанные с временем ответа и дополнительными метриками
     """
     setup_page(refresh_interval=60)
-    set_logo()
 
     data = load_data("data/result.json")
     if not data:

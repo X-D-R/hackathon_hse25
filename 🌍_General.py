@@ -1,7 +1,7 @@
 import plotly.express as px
 import streamlit as st
 
-from dashboard import Plots, load_data, process_data, set_logo
+from dashboard import Plots, load_data, process_data
 from dashboard.alerts import show_system_alert
 
 
@@ -9,8 +9,9 @@ from dashboard.alerts import show_system_alert
 # ГЛАВНАЯ ФУНКЦИЯ
 # ---------------------------
 def main():
+    st.logo('logo.svg', size='large',
+            link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
     st.set_page_config(page_title="Общий обзор", page_icon="📊", layout="wide")
-    set_logo()
 
     st.title("📊 Обзор общей картины")
 
