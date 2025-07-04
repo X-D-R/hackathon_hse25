@@ -30,7 +30,7 @@ def main():
 
     # палитры
     palette_map = {
-        # custom_green_palette, #px.colors.sequential.Greens
+        # px.colors.sequential.Greens
         "green": px.colors.sequential.YlGn_r,
         "yellow": px.colors.sequential.Inferno_r,
         "red": px.colors.sequential.YlOrRd_r,
@@ -46,12 +46,18 @@ def main():
     }
 
     # --- Графики ---
+    if status_color == "green":
+        df_to_plot = df  # всё
+    else:
+        df_to_plot = df[df["conflict_metric"] == 1]
 
-    graphs = Plots(df, color_sequence=color_sequence)
+    graphs = Plots(df_to_plot, color_sequence=color_sequence)
 
-    graphs.plot_conflict_metric(color_map_for_bar.get(status_color, "red"))
+    Plots(df, color_sequence=color_sequence).plot_conflict_metric(
+        color_map_for_bar.get(status_color, "red"))
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
+
     with col1:
         st.subheader("Количество вопросов по категориям")
         graphs.plot_pie_chart("question_category", "")
@@ -59,6 +65,10 @@ def main():
     with col2:
         st.subheader("Среднее время ответа по категориям")
         graphs.plot_response_time_by_category()
+
+    with col3:
+        st.subheader("Среднее оценка по категориям")
+        graphs.plot_avg_user_mark_by_category()
 
 
 if __name__ == "__main__":

@@ -9,13 +9,13 @@ def show_system_alert(df: pd.DataFrame):
     color_code = "blue"
 
     # --- Цветовая индикация ---
-    if percent < 10:
+    if percent <= 10:
         color = "#d4edda"
         border = "#28a745"
         emoji = "✅"
         msg = "Система работает стабильно"
         color_code = "green"
-    elif percent < 25:
+    elif percent <= 25:
         color = "#fff3cd"
         border = "#ffc107"
         emoji = "⚠️"
@@ -48,13 +48,14 @@ def show_system_alert(df: pd.DataFrame):
     """, unsafe_allow_html=True)
 
     # --- Раскрывающийся блок с деталями ---
-    with st.expander("🔍 Подробнее: подозрительные ответы"):
+    with st.expander("🔍 Подробнее: подозрительные ответы", expanded=conflicts > 0):
         if conflicts == 0:
             st.success("*Нет подозрительных ответов.*")
         else:
             st.dataframe(
                 df[df["conflict_metric"] == 1][
-                    ["user_question", "answer", "question_category", "response_time", "user_mark"]
+                    ["user_question", "answer", "question_category",
+                        "response_time", "user_mark"]
                 ].reset_index(drop=True),
                 use_container_width=True
             )
