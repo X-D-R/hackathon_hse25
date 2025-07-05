@@ -121,7 +121,13 @@ class Plots:
             number={'font': {'color': bar_color}}
         ))
 
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(
+            width=300,
+            height=250,
+            margin=dict(t=20, b=20, l=20, r=20)
+        )
+
+        st.plotly_chart(fig)
 
     def plot_response_time_by_category(self):
         if self.data.empty or "question_category" not in self.data.columns or "response_time" not in self.data.columns:
