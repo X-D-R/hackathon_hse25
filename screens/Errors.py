@@ -172,5 +172,4 @@ def all_view(df, status):
             st.dataframe(merged, use_container_width=True, height=300)
 
 
-if __name__ == '__main__':
-    main()
+main()

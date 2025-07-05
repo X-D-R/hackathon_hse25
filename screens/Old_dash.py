@@ -112,5 +112,4 @@ def main():
     graphs.plot_answer_correctness()
 
 
-if __name__ == '__main__':
-    main()
+main()
