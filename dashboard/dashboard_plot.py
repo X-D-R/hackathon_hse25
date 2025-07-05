@@ -333,12 +333,18 @@ class Plots:
             "user_mark"].mean().reset_index()
         grouped["user_mark"] = grouped["user_mark"].round(2)
 
+        grouped = grouped.sort_values(by="user_mark", ascending=False)
+
         fig = px.bar(
             grouped,
-            x="question_category",
-            y="user_mark",
+            x="user_mark",
+            y="question_category",
+            orientation="h",
             text_auto=True,
             labels={'question_category': '', 'user_mark': 'Средняя оценка'},
-            color_discrete_sequence=self.color_sequence
+            color_discrete_sequence=self.color_sequence,
         )
+
+        fig.update_layout(yaxis=dict(categoryorder="total ascending"))
+
         show_plot_with_download_below(fig, "avg_user_mark_by_category")

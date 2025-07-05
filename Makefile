@@ -10,7 +10,7 @@ endif
 
 run:
 	docker run --rm -p 8501:8501 \
-		-v $(HOST_DIR):/app \
+		-v "$(HOST_DIR):/app" \
 		--name $(CONTAINER_NAME) \
 		$(IMAGE_NAME)
 
@@ -20,5 +20,5 @@ build:
 rebuild: build run
 
 clean:
-	docker system prune -f
-
+	docker rm -f $(CONTAINER_NAME) || true
+	docker rmi -f $(IMAGE_NAME) || true

@@ -14,8 +14,9 @@ def main():
         - Графики основных метрик (распределение по кампусам, уровням образования и т.д.)
         - Графики, связанные с временем ответа и дополнительными метриками
     """
+    st.logo('logo.svg', size='large',
+            link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
     setup_page(refresh_interval=60)
-    set_logo()
 
     data = load_data("data/result.json")
     if not data:
@@ -111,5 +112,4 @@ def main():
     graphs.plot_answer_correctness()
 
 
-if __name__ == '__main__':
-    main()
+main()

@@ -1,16 +1,14 @@
 import plotly.express as px
 import streamlit as st
 
-from dashboard import Plots, load_data, process_data, set_logo
-from dashboard.alerts import show_system_alert
+from dashboard import Plots, load_data, process_data
+from dashboard.alerts import get_system_alert_status, render_system_alert
 
 
-# ---------------------------
-# ГЛАВНАЯ ФУНКЦИЯ
-# ---------------------------
 def main():
-    st.set_page_config(page_title="Общий обзор", page_icon="📊", layout="wide")
-    set_logo()
+    st.set_page_config(layout="wide")
+    st.logo('logo.svg', size='large',
+            link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
 
     st.title("📊 Обзор общей картины")
 
@@ -26,7 +24,11 @@ def main():
         st.stop()
 
     # --- Плашка статуса и детализация ---
-    status_color = show_system_alert(df)
+    status = get_system_alert_status(df)
+    status_color = status['level']
+    render_system_alert(status)
+    st.page_link('pages/Errors.py',
+                 label='Показать ошибки', use_container_width=True, icon="ℹ️")
 
     # палитры
     palette_map = {
@@ -47,7 +49,7 @@ def main():
 
     # --- Графики ---
     if status_color == "green":
-        df_to_plot = df  # всё
+        df_to_plot = df
     else:
         df_to_plot = df[df["conflict_metric"] == 1]
 
@@ -71,5 +73,4 @@ def main():
         graphs.plot_avg_user_mark_by_category()
 
 
-if __name__ == "__main__":
-    main()
+main()
