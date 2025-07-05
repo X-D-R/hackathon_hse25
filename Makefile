@@ -20,4 +20,5 @@ build:
 rebuild: build run
 
 clean:
-	docker system prune -f
+	docker rm -f $(CONTAINER_NAME) || true
+	docker rmi -f $(IMAGE_NAME) || true
