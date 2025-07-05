@@ -27,7 +27,7 @@ def main():
     status = get_system_alert_status(df)
     status_color = status['level']
     render_system_alert(status)
-    st.page_link('screens/Errors.py',
+    st.page_link('pages/Errors.py',
                  label='Показать ошибки', use_container_width=True, icon="ℹ️")
 
     # палитры
