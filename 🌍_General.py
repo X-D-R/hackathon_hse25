@@ -2,8 +2,7 @@ import plotly.express as px
 import streamlit as st
 
 from dashboard import Plots, load_data, process_data
-from dashboard.alerts import show_system_alert
-
+from dashboard.alerts import get_system_alert_status, render_system_alert
 
 # ---------------------------
 # ГЛАВНАЯ ФУНКЦИЯ
@@ -27,7 +26,9 @@ def main():
         st.stop()
 
     # --- Плашка статуса и детализация ---
-    status_color = show_system_alert(df)
+    status = get_system_alert_status(df)
+    status_color = get_system_alert_status(df)['level']
+    render_system_alert(status)
 
     # палитры
     palette_map = {
@@ -48,7 +49,7 @@ def main():
 
     # --- Графики ---
     if status_color == "green":
-        df_to_plot = df  # всё
+        df_to_plot = df
     else:
         df_to_plot = df[df["conflict_metric"] == 1]
 
