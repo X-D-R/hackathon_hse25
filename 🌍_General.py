@@ -27,7 +27,7 @@ def main():
 
     # --- Плашка статуса и детализация ---
     status = get_system_alert_status(df)
-    status_color = get_system_alert_status(df)['level']
+    status_color = status['level']
     render_system_alert(status)
 
     # палитры
