@@ -14,6 +14,8 @@ def main():
         - Графики основных метрик (распределение по кампусам, уровням образования и т.д.)
         - Графики, связанные с временем ответа и дополнительными метриками
     """
+    st.logo('logo.svg', size='large',
+            link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
     setup_page(refresh_interval=60)
 
     data = load_data("data/result.json")
