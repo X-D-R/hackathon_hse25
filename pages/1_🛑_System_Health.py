@@ -88,7 +88,7 @@ def main():
                     df_to_show = df_to_show[df_to_show["question_category"].isin(
                         selected)]
 
-                st.dataframe(df_to_show, use_container_width=True, height=300)
+                st.dataframe(df_to_show, use_container_width=True)
 
     # --- Рендер в 2 колонки, если кейсов больше ---
     else:
@@ -109,7 +109,7 @@ def main():
                             selected)]
 
                     st.dataframe(
-                        df_to_show, use_container_width=True, height=300)
+                        df_to_show, use_container_width=True)
 
 
 def all_view(df, status):
