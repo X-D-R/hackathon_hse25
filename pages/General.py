@@ -33,6 +33,7 @@ def main():
     # палитры
     palette_map = {
         # px.colors.sequential.Greens
+        # px.colors.sequential.Greens
         "green": px.colors.sequential.YlGn_r,
         "yellow": px.colors.sequential.Inferno_r,
         "red": px.colors.sequential.YlOrRd_r,
@@ -67,6 +68,10 @@ def main():
     with col2:
         st.subheader("Среднее время ответа по категориям")
         graphs.plot_response_time_by_category()
+
+    with col3:
+        st.subheader("Среднее оценка по категориям")
+        graphs.plot_avg_user_mark_by_category()
 
     with col3:
         st.subheader("Среднее оценка по категориям")

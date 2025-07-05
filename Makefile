@@ -8,6 +8,12 @@ else
 	HOST_DIR := $(shell pwd)
 endif
 
+ifeq ($(OS),Windows_NT)
+	HOST_DIR := $(shell cd)
+else
+	HOST_DIR := $(shell pwd)
+endif
+
 run:
 	docker run --rm -p 8501:8501 \
 		-v "$(HOST_DIR):/app" \
@@ -16,6 +22,8 @@ run:
 
 build:
 	docker build -t $(IMAGE_NAME) .
+
+rebuild: build run
 
 rebuild: build run
 

@@ -122,6 +122,7 @@ class Plots:
         ))
 
         st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
 
     def plot_response_time_by_category(self):
         if self.data.empty or "question_category" not in self.data.columns or "response_time" not in self.data.columns:
@@ -134,6 +135,8 @@ class Plots:
             grouped,
             x="question_category",
             y="response_time",
+            text_auto=True,
+            labels={'question_category': '', 'response_time': 'Среднее время'},
             text_auto=True,
             labels={'question_category': '', 'response_time': 'Среднее время'},
             color_discrete_sequence=self.color_sequence
