@@ -83,7 +83,7 @@ def main():
                     cats = df_to_show['question_category'].dropna(
                     ).unique().tolist()
                     selected = st.multiselect(
-                        label="", options=cats, default=cats, key=f"cat_{i}"
+                        label=" ", options=cats, default=cats, key=f"cat_{i}"
                     )
                     df_to_show = df_to_show[df_to_show["question_category"].isin(
                         selected)]
@@ -103,7 +103,7 @@ def main():
                         cats = df_to_show['question_category'].dropna(
                         ).unique().tolist()
                         selected = st.multiselect(
-                            label="", options=cats, default=cats, key=f"cat_{i}_{j}"
+                            label=" ", options=cats, default=cats, key=f"cat_{i}_{j}"
                         )
                         df_to_show = df_to_show[df_to_show["question_category"].isin(
                             selected)]
@@ -128,7 +128,7 @@ def all_view(df, status):
         available_cats = suspicious_df["question_category"].dropna(
         ).unique().tolist()
         selected_cats = st.multiselect(
-            '', available_cats, default=available_cats, key="filter_cats_allview")
+            label=' ', options=available_cats, default=available_cats, key="filter_cats_allview")
         suspicious_df = suspicious_df[suspicious_df["question_category"].isin(
             selected_cats)]
 
