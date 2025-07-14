@@ -8,8 +8,6 @@ from dashboard.alerts import get_system_alert_status, render_system_alert
 def main():
     st.logo('logo.svg', size='large',
             link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
-    st.set_page_config(page_title="Системные сбои",
-                       page_icon="🛑", layout="wide")
     st.title("🛑 Системные сбои и отклонения")
 
     data = load_data("data/result.json")
