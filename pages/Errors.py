@@ -38,7 +38,7 @@ def main():
     # Очень короткие ответы (< 3 слов)
     short_responses = df[df["answer"].str.split().str.len() < 3]
 
-    # Высокая конфликтность
+    # Низкая оценка
     low_mark = df[df["user_mark"] <= 0]
 
     # --- Списки кейсов ---
