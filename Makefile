@@ -1,4 +1,3 @@
-# Имя образа и контейнера
 IMAGE_NAME=chatbot-dashboard
 CONTAINER_NAME=chatbot-dashboard
 
@@ -8,17 +7,23 @@ else
 	HOST_DIR := $(shell pwd)
 endif
 
+# Запуск в режиме продакшн
 run:
-	docker run --rm -p 8501:8501 \
-		-v "$(HOST_DIR):/app" \
-		--name $(CONTAINER_NAME) \
-		$(IMAGE_NAME)
+	docker compose up
 
+# Запуск в режиме разработки
+dev:
+	docker compose -f docker-compose.dev.yml up
+
+# Сборка продакшн-образа
 build:
-	docker build -t $(IMAGE_NAME) .
+	docker compose build
 
-rebuild: build run
+# Пересборка и запуск
+rebuild:
+	docker compose build && docker compose up
 
+# Очистка образов и контейнеров
 clean:
 	docker rm -f $(CONTAINER_NAME) || true
 	docker rmi -f $(IMAGE_NAME) || true
