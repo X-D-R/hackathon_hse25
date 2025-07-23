@@ -1,3 +1,5 @@
+.PHONY: run, dev, build, rebuild, rebuild_dev, clean
+
 IMAGE_NAME=chatbot-dashboard
 CONTAINER_NAME=chatbot-dashboard
 
@@ -22,6 +24,10 @@ build:
 # Пересборка и запуск
 rebuild:
 	docker compose build && docker compose up
+
+# Пересборка и запуск в режиме разработки
+rebuild_dev:
+	docker compose build && docker compose -f docker-compose.dev.yml up
 
 # Очистка образов и контейнеров
 clean:
