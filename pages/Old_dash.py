@@ -1,28 +1,24 @@
+import plotly.express as px
 import streamlit as st
-from dashboard_export import (create_excel_file, download_json,
-                              split_by_answer_quality)
-from dashboard_plot import Plots
-from dashboard_ui import setup_page, sidebar_layout
-from dashboard_utils import load_data, process_data
 from streamlit_autorefresh import st_autorefresh
 
+from dashboard import *
 
-# ---------------------------
-# ГЛАВНАЯ ФУНКЦИЯ
-# ---------------------------
+
 def main():
     """
     Основная функция приложения.
     Загружает и обрабатывает данные, отображает фильтры, а затем строит различные графики:
-      - Отдельные графики для метрик качества
-      - Сводный график для метрик качества
-      - Графики основных метрик (распределение по кампусам, уровням образования и т.д.)
-      - Графики, связанные с временем ответа и дополнительными метриками
+        - Отдельные графики для метрик качества
+        - Сводный график для метрик качества
+        - Графики основных метрик (распределение по кампусам, уровням образования и т.д.)
+        - Графики, связанные с временем ответа и дополнительными метриками
     """
+    st.logo('logo.svg', size='large',
+            link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
     setup_page(refresh_interval=60)
 
-    # Загрузка данных из обновленного JSON-файла
-    data = load_data("../result.json")
+    data = load_data("data/result.json")
     if not data:
         st.stop()
 
@@ -116,5 +112,4 @@ def main():
     graphs.plot_answer_correctness()
 
 
-if __name__ == "__main__":
-    main()
+main()

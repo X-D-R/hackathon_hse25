@@ -19,8 +19,9 @@ def show_plot_with_download_below(fig, filename: str):
 
 
 class Plots:
-    def __init__(self, data):
+    def __init__(self, data, color_sequence=None):
         self.data = data
+        self.color_sequence = color_sequence or px.colors.qualitative.Plotly
 
     def plot_pie_chart(self, column: str, _unused_title: str):
         if self.data.empty or column not in self.data.columns or self.data[column].dropna().empty:
@@ -30,7 +31,7 @@ class Plots:
             names=counts.index,
             values=counts.values,
             hole=0.4,
-            color_discrete_sequence=px.colors.sequential.RdBu
+            color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, f"pie_{column}")
 
@@ -45,7 +46,7 @@ class Plots:
             y=counts.values,
             labels={'x': x_label, 'y': y_label},
             text_auto=True,
-            color_discrete_sequence=px.colors.qualitative.Vivid
+            color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, f"bar_{column}")
 
@@ -62,7 +63,7 @@ class Plots:
             y="response_time",
             color="campus",
             text_auto=True,
-            color_discrete_sequence=px.colors.qualitative.Set3
+            color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, "resp_time_by_campus")
 
@@ -93,24 +94,34 @@ class Plots:
             names=["Без уточнений", "С уточнениями"],
             values=[1 - avg_flag, avg_flag],
             hole=0.3,
-            color_discrete_sequence=px.colors.qualitative.Pastel
+            color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, "follow_up_pie")
 
-    def plot_conflict_metric(self):
+    def plot_conflict_metric(self, bar_color=None, background_color=None):
+        bar_color = bar_color or "#FF6666"  # цвет стрелки
+        background_color = background_color or "#222222"
+
         if self.data.empty or "conflict_metric" not in self.data.columns:
             return st.info("Нет данных для построения графика")
+
         conflict_rate = self.data["conflict_metric"].mean() * 100
+
         fig = go.Figure(go.Indicator(
             mode="gauge+number",
             value=conflict_rate,
             gauge={
                 'axis': {'range': [0, 100]},
-                'bar': {'color': "red"},
-                'steps': [{'range': [0, 100], 'color': "lightcoral"}],
-            }
+                'bar': {'color': bar_color},
+                'bgcolor': background_color,
+                'steps': [
+                    {'range': [0, 100], 'color': background_color}
+                ],
+            },
+            number={'font': {'color': bar_color}}
         ))
-        show_plot_with_download_below(fig, "conflict_metric")
+
+        st.plotly_chart(fig, use_container_width=True)
 
     def plot_response_time_by_category(self):
         if self.data.empty or "question_category" not in self.data.columns or "response_time" not in self.data.columns:
@@ -123,7 +134,9 @@ class Plots:
             grouped,
             x="question_category",
             y="response_time",
-            color_discrete_sequence=px.colors.qualitative.Pastel
+            text_auto=True,
+            labels={'question_category': '', 'response_time': 'Среднее время'},
+            color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, "resp_time_by_category")
 
@@ -133,7 +146,7 @@ class Plots:
         fig = px.box(
             self.data,
             y="response_time",
-            color_discrete_sequence=["#FF6666"]
+            color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, "resp_time_boxplot")
 
@@ -217,7 +230,7 @@ class Plots:
             x="user_mark",
             nbins=3,
             title="Распределение пользовательских оценок",
-            color_discrete_sequence=px.colors.qualitative.Pastel
+            color_discrete_sequence=self.color_sequence
         )
         fig.update_layout(xaxis_title="Оценка", yaxis_title="Количество")
         show_plot_with_download_below(fig, "user_mark_distribution")
@@ -238,7 +251,7 @@ class Plots:
                         x=colname,
                         title=label,
                         marginal="box",
-                        color_discrete_sequence=px.colors.qualitative.Plotly
+                        color_discrete_sequence=self.color_sequence
                     )
                     fig.update_layout(showlegend=False)
                     show_plot_with_download_below(fig, f"naive_{colname}")
@@ -265,7 +278,7 @@ class Plots:
             points="all",
             color="Тип",
             title="Faithfulness Score — насколько ответ логически соответствует извлечённым документам",
-            color_discrete_sequence=px.colors.sequential.Blues_r
+            color_discrete_sequence=self.color_sequence
         )
         fig.update_layout(xaxis_title="Класс соответствия",
                           yaxis_title="Вероятность")
@@ -287,7 +300,7 @@ class Plots:
                     "answer_correctness_literal": "Literal (лингвистическое)",
                     "answer_correctness_neural": "Neural (семантическое)"
                 },
-                color_discrete_sequence=["#1f77b4"]  # насыщенный синий
+                color_discrete_sequence=self.color_sequence
             )
             fig.update_traces(selector=dict(mode="lines"),
                               line=dict(width=3, color="orange"))
@@ -303,7 +316,7 @@ class Plots:
                     "answer_correctness_literal": "Literal (лингвистическое)",
                     "answer_correctness_neural": "Neural (семантическое)"
                 },
-                color_discrete_sequence=["#1f77b4"]
+                color_discrete_sequence=self.color_sequence
             )
 
         fig.update_layout(
@@ -311,3 +324,27 @@ class Plots:
             yaxis_title="Семантическая схожесть"
         )
         show_plot_with_download_below(fig, "answer_correctness")
+
+    def plot_avg_user_mark_by_category(self):
+        if self.data.empty or "question_category" not in self.data.columns or "user_mark" not in self.data.columns:
+            return st.info("Нет данных для оценки по категориям")
+
+        grouped = self.data.groupby("question_category")[
+            "user_mark"].mean().reset_index()
+        grouped["user_mark"] = grouped["user_mark"].round(2)
+
+        grouped = grouped.sort_values(by="user_mark", ascending=False)
+
+        fig = px.bar(
+            grouped,
+            x="user_mark",
+            y="question_category",
+            orientation="h",
+            text_auto=True,
+            labels={'question_category': '', 'user_mark': 'Средняя оценка'},
+            color_discrete_sequence=self.color_sequence,
+        )
+
+        fig.update_layout(yaxis=dict(categoryorder="total ascending"))
+
+        show_plot_with_download_below(fig, "avg_user_mark_by_category")

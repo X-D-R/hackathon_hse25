@@ -30,10 +30,7 @@ def sidebar_layout(df):
     # ---------------------------
     # ФУНКЦИЯ САЙДБАРА ДЛЯ ФИЛЬТРАЦИИ ДАННЫХ
     # ---------------------------
-    st.sidebar.image(
-        "https://github.com/X-D-R/hackathon_hse25/raw/main/logo.png",
-        use_container_width=True
-    )
+
     st.sidebar.title("Фильтры")
 
     campuses = df["campus"].dropna().unique(
