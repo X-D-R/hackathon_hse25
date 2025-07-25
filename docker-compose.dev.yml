@@ -7,6 +7,8 @@ services:
     working_dir: /app
     volumes:
       - .:/app
+      - pip_cache:/root/.cache/pip
+      - site_packages:/usr/local/lib/python3.12/site-packages
     ports:
       - "8501:8501"
     command: >
@@ -14,3 +16,7 @@ services:
         pip install --no-cache-dir -r requirements.txt &&
         streamlit run main.py --server.port=8501 --server.address=0.0.0.0 --server.runOnSave true
       "
+
+volumes:
+  pip_cache:
+  site_packages:
