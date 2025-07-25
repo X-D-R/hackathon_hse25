@@ -6,6 +6,7 @@ from dashboard.alerts import get_system_alert_status, render_system_alert
 
 
 def main():
+    time = 20
     st.logo('logo.svg', size='large',
             link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
     st.title("🛑 Системные сбои и отклонения")
@@ -28,23 +29,23 @@ def main():
     st.subheader("🛠 Подозрительные случаи")
 
     # Долгие ответы
-    long_answers = df[df["response_time"] > 10]
+    long_answers = df[df["response_time"] > time]
 
     # Пустой ответ модели
-    empty_responses = df[df["answer"].str.strip() == ""]
+    empty_responses = df[df["answer"].str.strip() == "Сервер не отвечает, пожалуйста, попробуйте позже."]
 
     # Очень короткие ответы (< 3 слов)
     short_responses = df[df["answer"].str.split().str.len() < 3]
 
     # Низкая оценка
-    low_mark = df[df["user_mark"] <= 0]
+    low_mark = df[df["user_mark"] < 0]
 
     # --- Списки кейсов ---
     cases = []
 
     if len(long_answers):
         cases.append({
-            "title": "⏱ Долгое время генерации (>10 сек)",
+            "title": "⏱ Долгое время генерации (>20 сек)",
             "df": long_answers[["user_question", "answer", "response_time", 'question_category']],
             "count": len(long_answers)
         })
