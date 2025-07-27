@@ -17,31 +17,40 @@ class LogsAnalyzer:
             return ''
         return self.clean_text.sub(' ', text).strip()
 
-    def _extract_topic_tags(self, input_str: str):
-        pattern = re.compile(r"'topic_tag_\d+'\s*:\s*'([^']*)'")
-        matches = pattern.findall(input_str)
-        non_empty_tags = [tag.strip() for tag in matches if tag.strip()]
+    def _extract_topic_tags(self, text: str):
+        topic_tag_pattern = r"'([^']+)'(?=\s*,|\s*\])"
+        tags = re.findall(topic_tag_pattern, text)
+        return tags
 
-        return non_empty_tags
+    def _extract_urls(self, text: str):
+        url_pattern = r'https?://(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:/[^\s\'",]*)?'
+        urls = re.findall(url_pattern, text)
+        return urls
+
+    def _extract_contents(self, text: str):
+        pattern = r"page_content\s*=\s*'(.*?)'"
+        page_contents = re.findall(pattern, text, re.DOTALL)
+        return page_contents
 
 
     def parse_all_data(self, file_path: str) -> List[Dict[str, Any]]:
         """Парсинг всех данных"""
-        return self._parse_data(file_path, include_time=True)
+        return self._parse_data(file_path)
 
-    def parse_item(self, item: Dict, metric_obj: MetricsCalculator, include_time: bool):
+    def parse_item(self, item: Dict, metric_obj: MetricsCalculator):
         context = self._clean_text(" ".join(item['chat_history']['cleaned_contexts']))[:1000]
+        if len(context) == 0:
+            context = "Cleaned context is empty, getting info from page contents in contexts: " + self._clean_text(" ".join(self._extract_contents(item['chat_history']['old_contexts'][0])))[:1000]
         answer = self._clean_text(item['chat_history']['old_answers'][0])[:1000]
         naive_text_fluency = metric_obj.naive_text_fluency(answer)
         faithfulness_score = metric_obj.faithfulness_score(context, answer)
         question = self._clean_text(item['chat_history']['old_questions'][0])
         user_filters = item['user_filters']
         question_filters = item['question_filters']
-        model_filters = self._extract_topic_tags(" ".join(item['chat_history']['old_contexts']))
-        context_urls = [doc.metadata.get('url', '') for doc in item['chat_history']['old_contexts'] if
-                        hasattr(doc, 'metadata')]
+        context_filters = self._extract_topic_tags(" ".join(item['chat_history']['old_contexts']))
+        context_urls = self._extract_urls(item['chat_history']['old_contexts'][0])
         question_length = len(question.split())
-        context_count = len(item['chat_history']['cleaned_contexts'])
+        context_count = item['chat_history']['old_contexts'][0].count("Document")
         if "Размышления модели" in item:
             reasoning = item["Размышления модели"]
             relevance = item["Релевантность контекста"]
@@ -50,6 +59,7 @@ class LogsAnalyzer:
             relevance = None
 
         parsed = {
+            # Основные данные
             'selected_role': item['Выбранная роль'],
             'campus': item['Кампус'],
             'education_level': item['Уровень образования'],
@@ -57,41 +67,41 @@ class LogsAnalyzer:
             'user_question': question,
             'user_filters': user_filters,
             'question_filters': question_filters,
-            'model_filters': model_filters,
+            'context_filters': context_filters,
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
+
+            # Дополнительные данные
             'context_urls': context_urls,
             'question_length': question_length,
             'context_count': context_count,
             'answer_length': len(answer.split()),
-            'contains_links': int('http' in answer),
+            'contains_links': bool('http' in answer),
             'reasoning': reasoning,
+            'response_time': item['Время ответа модели'],
 
-            # Основные метрики
+            # Текстовые оценки
             'sentence_count': naive_text_fluency['sentence_count'],
             'word_count': naive_text_fluency['word_count'],
             'avg_sentence_len': naive_text_fluency['avg_sentence_len'],
             'unique_word_ratio': naive_text_fluency['unique_word_ratio'],
+
+            # Основные метрики
             'faithfulness_score_entailment': faithfulness_score['entailment'],
             'faithfulness_score_neutral': faithfulness_score['neutral'],
             'faithfulness_score_contradiction': faithfulness_score['contradiction'],
             'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),
             'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer),
             'answer_relevance': metric_obj.answer_relevance(question, answer),
-            'jaccard_similarity': metric_obj.jaccard_similarity(set(question_filters), set(model_filters)),
+            'jaccard_similarity': metric_obj.jaccard_similarity(set(question_filters), set(context_filters)),
             'cosine_tag_answer': metric_obj.cosine_tag_answer("".join(question_filters), answer),
             'relevance': relevance,
         }
 
-        if include_time:
-            parsed.update({
-                'response_time': item['Время ответа модели']
-            })
-
         return parsed
 
-    def _parse_data(self, file_path: str, include_time: bool) -> List[Dict[str, Any]]:
+    def _parse_data(self, file_path: str) -> List[Dict[str, Any]]:
         """Базовая функция парсинга"""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
@@ -102,7 +112,7 @@ class LogsAnalyzer:
         metric_obj = MetricsCalculator()
         result = []
         for item in data:
-            result.append(self.parse_item(item, metric_obj, include_time))
+            result.append(self.parse_item(item, metric_obj))
 
         return result
 
@@ -126,29 +136,6 @@ def main():
     log_obj.export_data(data, output_name=f"{folder}result", extension="xlsx")
     log_obj.export_data(data, output_name=f"{folder}result", extension="json")
 
-
-def check_export(data: List[Dict[str, Any]]):
-    log_obj = LogsAnalyzer()
-    log_obj.export_data(data, output_name="result", extension="json")
-
-
-def check_clean_text():
-    log_obj = LogsAnalyzer()
-    data = log_obj._clean_text("студентов равно двум — это значит, что у студента две задолженности, и он допускается "
-                               "к пересдачам, но если получит третью неудовлетворительную оценку, то будет отчислен. "
-                               "Критическое значение КУД (качество учебной деятельности) для студентов, относящихся к "
-                               "отдельным категориям равно пяти , если превышение обычного КУД (качество учебной "
-                               "деятельности) в отношении студента зафиксировано в первый раз . Студенты, "
-                               "КУД (качество учебной деятельности) которых превышает критическое значение (с учетом "
-                               "отнесения студента к отдельной категории и наличия или отсутствия повтора критической "
-                               "ситуации), подлежат отчислению как не выполняющие обязанности по добросовестному "
-                               "освоению образовательной программы и выполнению учебного плана. Подробнее об "
-                               "отдельных категориях студентов . Пример расчета обычного КУД (качество учебной "
-                               "деятельности) : КУД=0 — у студента нет задолженностей, все хорошо КУД=2 — у студента "
-                               "две задолженности, он допускается к пересдачам КУД=4 — у студента четыре "
-                               "задолженности, он подлежит отчислению Документы Положение об организации "
-                               "промежуточной аттестации и текущего контроля успеваемости студентов НИУ (Национальный "
-                               "исследовательский университет) ВШЭ (Высшая школа экономики) (ПО")
 
 
 if __name__ == "__main__":
