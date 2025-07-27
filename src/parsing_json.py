@@ -1,9 +1,8 @@
 import json
-import re
 from typing import Dict, Any
 import pandas as pd
 
-from prepocess_calculate.metrics import *
+from src.metrics import *
 
 
 class LogsAnalyzer:
@@ -130,8 +129,8 @@ class LogsAnalyzer:
 
 def main():
     log_obj = LogsAnalyzer()
-    data = log_obj.parse_all_data("../logs/11_june.json")
     folder = '../data/'
+    data = log_obj.parse_all_data(f"{folder}log.json")
     log_obj.export_data(data, output_name=f"{folder}result", extension="xlsx")
     log_obj.export_data(data, output_name=f"{folder}result", extension="json")
 
