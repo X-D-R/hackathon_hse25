@@ -4,7 +4,7 @@ from typing import Dict, Any
 import pandas as pd
 
 from prepocess_calculate.metrics import *
-from profiling import Profiler
+# from profiling import Profiler
 
 
 class LogsAnalyzer:
@@ -30,14 +30,25 @@ class LogsAnalyzer:
         return self._parse_data(file_path, include_time=True)
 
     def parse_item(self, item: Dict, metric_obj: MetricsCalculator, include_time: bool):
-        context = self._clean_text(" ".join(item['chat_history']['cleaned_contexts']))
-        answer = self._clean_text(item['chat_history']['old_answers'][0])
+        context = self._clean_text(" ".join(item['chat_history']['cleaned_contexts']))[:1000]
+        answer = self._clean_text(item['chat_history']['old_answers'][0])[:1000]
         naive_text_fluency = metric_obj.naive_text_fluency(answer)
         faithfulness_score = metric_obj.faithfulness_score(context, answer)
         question = self._clean_text(item['chat_history']['old_questions'][0])
         user_filters = item['user_filters']
         question_filters = item['question_filters']
         model_filters = self._extract_topic_tags(" ".join(item['chat_history']['old_contexts']))
+        context_urls = [doc.metadata.get('url', '') for doc in item['chat_history']['old_contexts'] if
+                        hasattr(doc, 'metadata')]
+        question_length = len(question.split())
+        context_count = len(item['chat_history']['cleaned_contexts'])
+        if "Размышления модели" in item:
+            reasoning = item["Размышления модели"]
+            relevance = item["Релевантность контекста"]
+        else:
+            reasoning = None
+            relevance = None
+
         parsed = {
             'selected_role': item['Выбранная роль'],
             'campus': item['Кампус'],
@@ -50,6 +61,14 @@ class LogsAnalyzer:
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
+            'context_urls': context_urls,
+            'question_length': question_length,
+            'context_count': context_count,
+            'answer_length': len(answer.split()),
+            'contains_links': int('http' in answer),
+            'reasoning': reasoning,
+
+            # Основные метрики
             'sentence_count': naive_text_fluency['sentence_count'],
             'word_count': naive_text_fluency['word_count'],
             'avg_sentence_len': naive_text_fluency['avg_sentence_len'],
@@ -57,11 +76,12 @@ class LogsAnalyzer:
             'faithfulness_score_entailment': faithfulness_score['entailment'],
             'faithfulness_score_neutral': faithfulness_score['neutral'],
             'faithfulness_score_contradiction': faithfulness_score['contradiction'],
-            'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),  # time narrow space
-            'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer),  # time narrow space
+            'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),
+            'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer),
             'answer_relevance': metric_obj.answer_relevance(question, answer),
             'jaccard_similarity': metric_obj.jaccard_similarity(set(question_filters), set(model_filters)),
-            'cosine_tag_answer': metric_obj.cosine_tag_answer("".join(question_filters), answer)
+            'cosine_tag_answer': metric_obj.cosine_tag_answer("".join(question_filters), answer),
+            'relevance': relevance,
         }
 
         if include_time:
@@ -101,8 +121,8 @@ class LogsAnalyzer:
 
 def main():
     log_obj = LogsAnalyzer()
-    data = log_obj.parse_all_data("../logs/new_logs.json")
-    folder = 'data/'
+    data = log_obj.parse_all_data("../logs/11_june.json")
+    folder = '../data/'
     log_obj.export_data(data, output_name=f"{folder}result", extension="xlsx")
     log_obj.export_data(data, output_name=f"{folder}result", extension="json")
 
