@@ -4,7 +4,6 @@ from typing import Dict, Any
 import pandas as pd
 
 from prepocess_calculate.metrics import *
-# from profiling import Profiler
 
 
 class LogsAnalyzer:
@@ -32,7 +31,6 @@ class LogsAnalyzer:
         page_contents = re.findall(pattern, text, re.DOTALL)
         return page_contents
 
-
     def parse_all_data(self, file_path: str) -> List[Dict[str, Any]]:
         """Парсинг всех данных"""
         return self._parse_data(file_path)
@@ -40,7 +38,8 @@ class LogsAnalyzer:
     def parse_item(self, item: Dict, metric_obj: MetricsCalculator):
         context = self._clean_text(" ".join(item['chat_history']['cleaned_contexts']))[:1000]
         if len(context) == 0:
-            context = "Cleaned context is empty, getting info from page contents in contexts: " + self._clean_text(" ".join(self._extract_contents(item['chat_history']['old_contexts'][0])))[:1000]
+            context = "Cleaned context is empty, getting info from page contents in contexts: " + self._clean_text(
+                " ".join(self._extract_contents(item['chat_history']['old_contexts'][0])))[:1000]
         answer = self._clean_text(item['chat_history']['old_answers'][0])[:1000]
         naive_text_fluency = metric_obj.naive_text_fluency(answer)
         faithfulness_score = metric_obj.faithfulness_score(context, answer)
@@ -137,12 +136,5 @@ def main():
     log_obj.export_data(data, output_name=f"{folder}result", extension="json")
 
 
-
 if __name__ == "__main__":
     main()
-    # profiler = Profiler(output_dir="profiling_results")
-    # profiler.run_with_profiling(main)
-    # timer = timeit.Timer(lambda: main())
-    # times = timer.repeat(repeat=1000, number=1)
-    # print(f"Overall time: {sum(times)}")
-    # print(f"Mean time: {sum(times) / len(times)}")
