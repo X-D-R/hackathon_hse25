@@ -28,20 +28,13 @@ def main():
     st.divider()
     st.subheader("🛠 Подозрительные случаи")
 
-    # Долгие ответы
+    # --- Классификация кейсов ---
     long_answers = df[df["response_time"] > time]
-
-    # Пустой ответ модели
     empty_responses = df[df["answer"].str.strip(
     ) == "Сервер не отвечает, пожалуйста, попробуйте позже."]
-
-    # Очень короткие ответы (< 3 слов)
     short_responses = df[df["answer"].str.split().str.len() < 3]
-
-    # Низкая оценка
     low_mark = df[df["user_mark"] < 0]
 
-    # --- Списки кейсов ---
     cases = []
 
     if len(long_answers):
@@ -90,25 +83,21 @@ def main():
             "count": len(low_mark)
         })
 
-    # --- Рендер с приоритетом по вертикали (1–2 случая) ---
+    # --- Рендер ---
     if len(cases) <= 2:
         for i, case in enumerate(cases):
             with st.expander(f"{case['title']} (Найдено: {case['count']})", expanded=True):
                 df_to_show = case["df"]
 
-                # Фильтр по категории
                 if 'question_category' in df_to_show.columns:
-                    cats = df_to_show['question_category'].dropna(
-                    ).unique().tolist()
+                    cats = df_to_show['Категория'].dropna().unique().tolist()
                     selected = st.multiselect(
                         label=" ", options=cats, default=cats, key=f"cat_{i}"
                     )
-                    df_to_show = df_to_show[df_to_show["question_category"].isin(
+                    df_to_show = df_to_show[df_to_show["Категория"].isin(
                         selected)]
 
                 st.dataframe(df_to_show, use_container_width=True)
-
-    # --- Рендер в 2 колонки, если кейсов больше ---
     else:
         for i in range(0, len(cases), 2):
             cols = st.columns(min(2, len(cases) - i))
@@ -117,17 +106,16 @@ def main():
                 with col.expander(f"{case['title']} (Найдено: {case['count']})", expanded=True):
                     df_to_show = case["df"]
 
-                    if 'question_category' in df_to_show.columns:
-                        cats = df_to_show['question_category'].dropna(
+                    if 'Категория' in df_to_show.columns:
+                        cats = df_to_show['Категория'].dropna(
                         ).unique().tolist()
                         selected = st.multiselect(
                             label=" ", options=cats, default=cats, key=f"cat_{i}_{j}"
                         )
-                        df_to_show = df_to_show[df_to_show["question_category"].isin(
+                        df_to_show = df_to_show[df_to_show["Категория"].isin(
                             selected)]
 
-                    st.dataframe(
-                        df_to_show, use_container_width=True)
+                    st.dataframe(df_to_show, use_container_width=True)
 
 
 def all_view(df, status):
