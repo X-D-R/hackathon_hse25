@@ -2,6 +2,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from scipy.stats import linregress
+from streamlit_autorefresh import st_autorefresh
 
 from dashboard import (Plots, load_data, plot_metric_trend_over_time,
                        process_data, sidebar_layout)
@@ -141,6 +142,7 @@ def draw_graphs(graphs):
 
 def main():
     st.set_page_config(layout="wide")
+    st_autorefresh(interval=10 * 1000, key="datarefresh")
     st.logo('logo.svg', size='large',
             link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
     st.title("📊 Обзор общей картины")

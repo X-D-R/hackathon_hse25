@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 from dashboard import load_data, process_data
 from dashboard.alerts import get_system_alert_status, render_system_alert
@@ -7,6 +8,7 @@ from dashboard.alerts import get_system_alert_status, render_system_alert
 
 def main():
     time = 20
+    st_autorefresh(interval=10 * 1000, key="datarefresh")
     st.logo('logo.svg', size='large',
             link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
     st.title("🛑 Системные сбои и отклонения")
