@@ -1,15 +1,15 @@
 import plotly.express as px
 import streamlit as st
 
-from dashboard import Plots, load_data, process_data
+from dashboard import Plots, load_data, process_data, sidebar_layout
 from dashboard.alerts import get_system_alert_status, render_system_alert
 
 
 def main():
-    st.set_page_config(layout="wide")
     st.logo('logo.svg', size='large',
             link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
 
+    st.set_page_config(layout="wide")
     st.title("📊 Обзор общей картины")
 
     # --- Загрузка и обработка данных ---
@@ -23,7 +23,10 @@ def main():
         st.warning("Данные не обработаны.")
         st.stop()
 
-    # --- Плашка статуса и детализация ---
+    # --- Фильтрация по категориям, кампусам и т.п. ---
+    df_filtered = sidebar_layout(df)
+
+    # --- Статус системы ---
     status = get_system_alert_status(df)
     status_color = status['level']
     render_system_alert(status)
@@ -58,19 +61,50 @@ def main():
     Plots(df, color_sequence=color_sequence).plot_conflict_metric(
         color_map_for_bar.get(status_color, "red"))
 
+    # --- Метрики ---
     col1, col2, col3 = st.columns(3)
 
+    # Подсчёт базовых метрик
+    total_negative = (df_filtered["user_mark"] < 0).sum()
+    avg_time = df_filtered["response_time"].mean()
+    conflict_percent = df_filtered["conflict_metric"].mean() * 100
+
+    # Для примитивной "динамики" — сравнение с последними 10 запросами
+    if len(df_filtered) >= 20:
+        prev = df_filtered.iloc[:-10]
+        curr = df_filtered.iloc[-10:]
+        delta_neg = (curr["user_mark"] < 0).mean()*100 - \
+            (prev["user_mark"] < 0).mean()*100
+        delta_time = curr["response_time"].mean() - \
+            prev["response_time"].mean()
+        delta_conf = curr["conflict_metric"].mean()*100 - \
+            prev["conflict_metric"].mean()*100
+    else:
+        delta_neg = delta_time = delta_conf = 0.0
+
     with col1:
-        st.subheader("Количество вопросов по категориям")
-        graphs.plot_pie_chart("question_category", "")
+        st.metric(
+            "👎 Отрицательных оценок",
+            f"{total_negative}",
+            f"{delta_neg:.1f}%",
+            delta_color="inverse"
+        )
 
     with col2:
-        st.subheader("Среднее время ответа по категориям")
-        graphs.plot_response_time_by_category()
+        st.metric(
+            "⏱ Среднее время ответа",
+            f"{avg_time:.2f} сек",
+            f"{delta_time:.2f} сек",
+            delta_color="inverse"
+        )
 
     with col3:
-        st.subheader("Среднее оценка по категориям")
-        graphs.plot_avg_user_mark_by_category()
+        st.metric(
+            "⚠️ Конфликтность",
+            f"{conflict_percent:.1f}%",
+            f"{delta_conf:.1f}%",
+            delta_color="inverse"
+        )
 
 
 main()
