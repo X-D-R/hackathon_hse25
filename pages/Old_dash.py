@@ -92,11 +92,8 @@ def main():
         graphs.plot_averaged_response_time_chart(bin_size=10)
 
     # --- 6) Дополнительные графики ---
-    st.markdown("## Дополнительные графики")
     st.subheader("Распределение времени ответа (BoxPlot)")
     graphs.plot_response_time_boxplot()
-    st.subheader("Метрика конфликтного ответа")
-    graphs.plot_conflict_metric()
 
     # --- 7) Метрики по ответу и тексту ---
     st.markdown("## Оценка пользователя")
