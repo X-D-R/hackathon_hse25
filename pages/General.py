@@ -132,12 +132,30 @@ def main():
     bar_color = get_bar_color(status['level'])
 
     df_to_plot = df if status['level'] == "green" else df[df["conflict_metric"] == 1]
-    graphs = Plots(df, color_sequence=color_sequence)
+    graphs = Plots(df_to_plot, color_sequence=color_sequence)
 
-    graphs.plot_conflict_metric(bar_color)
+    Plots(df, color_sequence=color_sequence).plot_conflict_metric(bar_color)
 
     metrics = calculate_metrics(df_filtered)
     show_metrics(metrics)
+    st.divider()
+    draw_graphs(graphs)
+
+
+def draw_graphs(graphs):
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.subheader("Количество вопросов по категориям")
+        graphs.plot_pie_chart("question_category", "")
+
+    with col2:
+        st.subheader("Среднее время ответа по категориям")
+        graphs.plot_response_time_by_category()
+
+    with col3:
+        st.subheader("Среднее оценка по категориям")
+        graphs.plot_avg_user_mark_by_category()
 
 
 main()
