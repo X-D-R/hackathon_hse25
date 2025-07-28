@@ -2,6 +2,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from scipy.stats import linregress
 
 
 def show_plot_with_download_below(fig, filename: str):
@@ -350,26 +351,48 @@ class Plots:
         show_plot_with_download_below(fig, "avg_user_mark_by_category")
 
 
-def plot_mini_trend(prev_value, curr_value, height=130, inverse=True):
-    if inverse:
-        color = "#28a745" if curr_value < prev_value else "#dc3545"
+def plot_metric_trend_over_time(df: pd.DataFrame, column: str, inverse=True, height=160, epsilon=0.01):
+    if df.empty or column not in df.columns:
+        st.info("Нет данных для тренда")
+        return
+
+    df_sorted = df.copy().reset_index(drop=True)
+    df_sorted["rolling"] = df_sorted[column].rolling(
+        window=5, min_periods=1).mean()
+
+    x = list(range(len(df_sorted)))
+    y = df_sorted["rolling"]
+    slope, _, _, _, _ = linregress(x, y)
+
+    # 💡 Логика инверсии:
+    is_improvement = (
+        abs(slope) >= epsilon and
+        ((slope < 0 and inverse) or (slope > 0 and not inverse))
+    )
+
+    if abs(slope) < epsilon:
+        color = "#888888"  # серый — без изменений
+    elif is_improvement:
+        color = "#28a745"  # улучшение
     else:
-        color = "#28a745" if curr_value > prev_value else "#dc3545"
+        color = "#dc3545"  # ухудшение
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=["До", "Сейчас"],
-        y=[prev_value, curr_value],
+        x=x,
+        y=y,
         mode="lines+markers",
-        line=dict(color=color, width=3),
-        marker=dict(size=8),
-        showlegend=False
+        line=dict(color=color, width=2),
+        marker=dict(size=5),
+        name=column
     ))
+
     fig.update_layout(
         height=height,
-        margin=dict(l=10, r=10, t=10, b=30),
-        xaxis=dict(title="", showgrid=True),
-        yaxis=dict(title="", showgrid=True, zeroline=True),
+        margin=dict(l=10, r=10, t=30, b=20),
+        xaxis_title="№ запроса",
+        yaxis_title="Значение",
         template="plotly_dark"
     )
+
     st.plotly_chart(fig, use_container_width=True)

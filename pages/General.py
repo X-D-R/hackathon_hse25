@@ -2,8 +2,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from dashboard import (Plots, load_data, plot_mini_trend, process_data,
-                       sidebar_layout)
+from dashboard import (Plots, load_data, plot_metric_trend_over_time,
+                       process_data, sidebar_layout)
 from dashboard.alerts import get_system_alert_status, render_system_alert
 
 
@@ -42,7 +42,7 @@ def calculate_metrics(df):
         delta_time = curr["response_time"].mean() - \
             prev["response_time"].mean()
         delta_conf = curr["conflict_metric"].mean(
-        )*100 - (prev["conflict_metric"].mean()*100)
+        )*100 - prev["conflict_metric"].mean()*100
         prev_neg = (prev["user_mark"] < 0).mean()*100
         curr_neg = (curr["user_mark"] < 0).mean()*100
         prev_time = prev["response_time"].mean()
@@ -71,38 +71,60 @@ def calculate_metrics(df):
     }
 
 
-def show_metrics(metrics):
+def show_metrics(df_filtered, metrics):
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.metric(
-            "👎 Отрицательных оценок",
-            f"{metrics['total_negative']}",
-            f"{metrics['delta_neg']:.1f}%",
-            delta_color="inverse"
-        )
-        plot_mini_trend(metrics["prev_neg"],
-                        metrics["curr_neg"])
+        delta = metrics["delta_neg"]
+        if delta == 0:
+            st.metric("👎 Отрицательных оценок",
+                      metrics["total_negative"], "~ без изменений", delta_color="off")
+        else:
+            st.metric("👎 Отрицательных оценок",
+                      metrics["total_negative"], f"{delta:.1f}%", delta_color="inverse")
+        plot_metric_trend_over_time(df_filtered.assign(neg=(df_filtered["user_mark"] < 0).astype(int)),
+                                    column="neg",
+                                    inverse=True)
 
     with col2:
-        st.metric(
-            "⏱ Среднее время ответа",
-            f"{metrics['avg_time']:.2f} сек",
-            f"{metrics['delta_time']:.2f} сек",
-            delta_color="inverse"
-        )
-        plot_mini_trend(metrics["prev_time"],
-                        metrics["curr_time"])
+        delta = metrics["delta_time"]
+        if delta == 0:
+            st.metric("⏱ Среднее время ответа",
+                      f"{metrics['avg_time']:.2f} сек", "~ без изменений", delta_color="off")
+        else:
+            st.metric("⏱ Среднее время ответа",
+                      f"{metrics['avg_time']:.2f} сек", f"{delta:.2f} сек", delta_color="inverse")
+        plot_metric_trend_over_time(df_filtered,
+                                    column="response_time",
+                                    inverse=True)
 
     with col3:
-        st.metric(
-            "⚠️ Конфликтность",
-            f"{metrics['conflict_percent']:.1f}%",
-            f"{metrics['delta_conf']:.1f}%",
-            delta_color="inverse"
-        )
-        plot_mini_trend(metrics["prev_conf"],
-                        metrics["curr_conf"])
+        delta = metrics["delta_conf"]
+        if delta == 0:
+            st.metric("⚠️ Конфликтность",
+                      f"{metrics['conflict_percent']:.1f}%", "~ без изменений", delta_color="off")
+        else:
+            st.metric("⚠️ Конфликтность",
+                      f"{metrics['conflict_percent']:.1f}%", f"{delta:.1f}%", delta_color="inverse")
+        plot_metric_trend_over_time(df_filtered,
+                                    column="conflict_metric",
+                                    inverse=True)
+
+
+def draw_graphs(graphs):
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.subheader("Количество вопросов по категориям")
+        graphs.plot_pie_chart("question_category", "")
+
+    with col2:
+        st.subheader("Среднее время ответа по категориям")
+        graphs.plot_response_time_by_category()
+
+    with col3:
+        st.subheader("Среднее оценка по категориям")
+        graphs.plot_avg_user_mark_by_category()
 
 
 def main():
@@ -123,7 +145,7 @@ def main():
 
     df_filtered = sidebar_layout(df)
 
-    status = get_system_alert_status(df)
+    status = get_system_alert_status(df_filtered)
     render_system_alert(status)
     st.page_link('pages/Errors.py',
                  label='Показать ошибки', use_container_width=True, icon="ℹ️")
@@ -131,31 +153,16 @@ def main():
     color_sequence = get_color_palette(status['level'])
     bar_color = get_bar_color(status['level'])
 
-    df_to_plot = df if status['level'] == "green" else df[df["conflict_metric"] == 1]
+    df_to_plot = df_filtered if status['level'] == "green" else df_filtered[df_filtered["conflict_metric"] == 1]
     graphs = Plots(df_to_plot, color_sequence=color_sequence)
 
     Plots(df, color_sequence=color_sequence).plot_conflict_metric(bar_color)
 
     metrics = calculate_metrics(df_filtered)
-    show_metrics(metrics)
+    show_metrics(df_filtered, metrics)
+
     st.divider()
     draw_graphs(graphs)
-
-
-def draw_graphs(graphs):
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.subheader("Количество вопросов по категориям")
-        graphs.plot_pie_chart("question_category", "")
-
-    with col2:
-        st.subheader("Среднее время ответа по категориям")
-        graphs.plot_response_time_by_category()
-
-    with col3:
-        st.subheader("Среднее оценка по категориям")
-        graphs.plot_avg_user_mark_by_category()
 
 
 main()
