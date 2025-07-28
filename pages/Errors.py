@@ -32,7 +32,8 @@ def main():
     long_answers = df[df["response_time"] > time]
 
     # Пустой ответ модели
-    empty_responses = df[df["answer"].str.strip() == "Сервер не отвечает, пожалуйста, попробуйте позже."]
+    empty_responses = df[df["answer"].str.strip(
+    ) == "Сервер не отвечает, пожалуйста, попробуйте позже."]
 
     # Очень короткие ответы (< 3 слов)
     short_responses = df[df["answer"].str.split().str.len() < 3]
@@ -45,29 +46,47 @@ def main():
 
     if len(long_answers):
         cases.append({
-            "title": "⏱ Долгое время генерации (>20 сек)",
-            "df": long_answers[["user_question", "answer", "response_time", 'question_category']],
+            "title": f"⏱ Долгое время генерации (>{time} сек)",
+            "df": long_answers[["user_question", "answer", "response_time", 'question_category']].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "response_time": "Время (сек)",
+                "question_category": "Категория"
+            }),
             "count": len(long_answers)
         })
 
     if len(empty_responses):
         cases.append({
             "title": "📭 Пустой ответ модели",
-            "df": empty_responses[["user_question", "answer", 'question_category']],
+            "df": empty_responses[["user_question", "answer", 'question_category']].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "question_category": "Категория",
+            }),
             "count": len(empty_responses)
         })
 
     if len(short_responses):
         cases.append({
             "title": "✂️ Слишком короткий ответ (< 3 слов)",
-            "df": short_responses[["user_question", "answer", 'question_category']],
+            "df": short_responses[["user_question", "answer", 'question_category']].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "question_category": "Категория",
+            }),
             "count": len(short_responses)
         })
 
     if len(low_mark):
         cases.append({
             "title": "⚠️ Низкая оценка",
-            "df": low_mark[["user_question", "answer", "user_mark", 'question_category']],
+            "df": low_mark[["user_question", "answer", "user_mark", 'question_category']].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "question_category": "Категория",
+                "user_mark": "Оценка"
+            }),
             "count": len(low_mark)
         })
 
@@ -137,7 +156,16 @@ def all_view(df, status):
         #     suspicious_df = suspicious_df[suspicious_df["user_question"].str.contains(
         #         search_text, case=False, na=False)]
 
-        st.dataframe(suspicious_df, use_container_width=True, height=350)
+        st.dataframe(
+            suspicious_df.rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "response_time": "Время (сек)",
+                "question_category": "Категория",
+                "user_mark": "Оценка"
+            }),
+            use_container_width=True
+        )
 
     # --- Категории с высоким % ошибок ---
     st.markdown("### 📌 Подозрительные категории")
@@ -160,7 +188,7 @@ def all_view(df, status):
 
         # --- Настраиваемый порог ---
         threshold = st.slider(
-            "⚠️ Порог процента подозрительных ответов", min_value=0, max_value=100, value=20)
+            "Порог процента подозрительных ответов", min_value=0, max_value=100, value=20)
         merged = merged[merged["percent"] > threshold]
 
         if merged.empty:
@@ -168,7 +196,13 @@ def all_view(df, status):
         else:
             st.warning(
                 "Обнаружены категории с повышенным уровнем подозрительных ответов:")
-            st.dataframe(merged, use_container_width=True, height=300)
+            st.dataframe(
+                merged.rename(columns={"count": "Проблемных",
+                                       "total": "Всего",
+                                       "percent": "Процент",
+                                       "question_category": "Категория"
+                                       }),
+                use_container_width=True)
 
 
 main()
