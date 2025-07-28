@@ -348,3 +348,28 @@ class Plots:
         fig.update_layout(yaxis=dict(categoryorder="total ascending"))
 
         show_plot_with_download_below(fig, "avg_user_mark_by_category")
+
+
+def plot_mini_trend(prev_value, curr_value, height=130, inverse=True):
+    if inverse:
+        color = "#28a745" if curr_value < prev_value else "#dc3545"
+    else:
+        color = "#28a745" if curr_value > prev_value else "#dc3545"
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=["До", "Сейчас"],
+        y=[prev_value, curr_value],
+        mode="lines+markers",
+        line=dict(color=color, width=3),
+        marker=dict(size=8),
+        showlegend=False
+    ))
+    fig.update_layout(
+        height=height,
+        margin=dict(l=10, r=10, t=10, b=30),
+        xaxis=dict(title="", showgrid=True),
+        yaxis=dict(title="", showgrid=True, zeroline=True),
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig, use_container_width=True)
