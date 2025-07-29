@@ -6,8 +6,7 @@ def setup_page(refresh_interval: int = 10):
     # ---------------------------
     # НАСТРОЙКА СТРАНИЦЫ STREAMLIT
     # ---------------------------
-    st.set_page_config(page_title="Аналитика Чат-Бота",
-                       page_icon="🤖", layout="wide")
+    st.set_page_config(layout="wide")
 
     # CSS-хак для кнопок скачивания
     st.markdown("""
