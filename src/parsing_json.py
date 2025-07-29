@@ -2,7 +2,7 @@ import json
 from typing import Dict, Any
 import pandas as pd
 
-from src.metrics import *
+from metrics import *
 
 
 class LogsAnalyzer:
@@ -69,6 +69,7 @@ class LogsAnalyzer:
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
+            'time': item['Дата вопроса'],
 
             # Дополнительные данные
             'context_urls': context_urls,
