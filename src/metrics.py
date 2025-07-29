@@ -1,11 +1,11 @@
+import re
 from typing import List
 
 import evaluate
 import numpy as np
-import re
-from transformers import pipeline
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from transformers import pipeline
 
 
 class MetricsCalculator:
@@ -143,13 +143,15 @@ class MetricsCalculator:
 
     def faithfulness_score(self, context: str, answer: str) -> dict:
         result = self.faithfulness_model(f"{context} [SEP] {answer}")
-        faithfulness_scores = {item['label']: item['score'] for item in result[0]}
+        faithfulness_scores = {item['label']
+            : item['score'] for item in result[0]}
         return faithfulness_scores
 
     def answer_relevance(self, question: str, answer: str) -> float:
         query_embedding = self.relevance_model.encode(question)
         answer_embedding = self.relevance_model.encode(answer)
-        similarity = cosine_similarity([query_embedding], [answer_embedding])[0][0]
+        similarity = cosine_similarity(
+            [query_embedding], [answer_embedding])[0][0]
         return similarity
 
     def jaccard_similarity(self, set1, set2):
@@ -158,7 +160,10 @@ class MetricsCalculator:
         return intersection / union if union != 0 else 0
 
     def cosine_tag_answer(self, tag: str, answer: str) -> float:
-        query_embedding = self.relevance_model.encode(tag, convert_to_tensor=True)
-        answer_embedding = self.relevance_model.encode(answer, convert_to_tensor=True)
-        similarity = cosine_similarity(query_embedding.reshape(1, -1), answer_embedding.reshape(1, -1))[0][0]
+        query_embedding = self.relevance_model.encode(
+            tag, convert_to_tensor=True)
+        answer_embedding = self.relevance_model.encode(
+            answer, convert_to_tensor=True)
+        similarity = cosine_similarity(query_embedding.reshape(
+            1, -1), answer_embedding.reshape(1, -1))[0][0]
         return float(similarity)
