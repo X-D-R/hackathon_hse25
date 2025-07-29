@@ -141,10 +141,10 @@ def draw_graphs(graphs):
 
 
 def main():
+    time_refresh = 60
     st.set_page_config(layout="wide")
-    st_autorefresh(interval=10 * 1000, key="datarefresh")
-    st.logo('logo.svg', size='large',
-            link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
+    st_autorefresh(interval=time_refresh * 1000, key="datarefresh")
+    st.logo('logo.svg', size='large', link='')
     st.title("📊 Обзор общей картины")
 
     data = load_data("data/result.json")

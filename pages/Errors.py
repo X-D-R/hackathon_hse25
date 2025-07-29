@@ -8,9 +8,10 @@ from dashboard.alerts import get_system_alert_status, render_system_alert
 
 def main():
     time = 20
-    st_autorefresh(interval=10 * 1000, key="datarefresh")
-    st.logo('logo.svg', size='large',
-            link='https://youtu.be/dQw4w9WgXcQ?si=o_DarwH6AyHbJm_k')
+    time_refresh = 60
+    st_autorefresh(interval=time_refresh * 1000, key="datarefresh")
+    st.logo('logo.svg', size='large', link="")
+
     st.title("🛑 Системные сбои и отклонения")
 
     data = load_data("data/result.json")
