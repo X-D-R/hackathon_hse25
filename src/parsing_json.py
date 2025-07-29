@@ -69,7 +69,7 @@ class LogsAnalyzer:
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
-            'time': item['Дата вопроса'],
+            # 'time_question': item['Дата вопроса'],
 
             # Дополнительные данные
             'context_urls': context_urls,
@@ -131,7 +131,7 @@ class LogsAnalyzer:
 def main():
     log_obj = LogsAnalyzer()
     folder = '../data/'
-    data = log_obj.parse_all_data(f"{folder}log.json")
+    data = log_obj.parse_all_data(f"{folder}log2.json")
     log_obj.export_data(data, output_name=f"{folder}result", extension="xlsx")
     log_obj.export_data(data, output_name=f"{folder}result", extension="json")
 
