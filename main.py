@@ -36,6 +36,7 @@ def show_loader():
 def start():
     if not all(os.path.exists(f) for f in REQUIRED_FILES):
         show_loader()
+    pipeline()
 
     page_dict = {
         "Навигация": [
@@ -43,7 +44,8 @@ def start():
             st.Page(f"{APP_PAGES}/Errors.py", title="Ошибки", icon="🚨")
         ],
         "Для разработчиков": [
-            st.Page(f"{APP_PAGES}/Old_dash.py", title="Вся статистика", icon="📊")
+            st.Page(f"{APP_PAGES}/Old_dash.py",
+                    title="Вся статистика", icon="📊")
         ]
     }
     pg = st.navigation(page_dict)
