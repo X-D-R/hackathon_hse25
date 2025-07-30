@@ -1,4 +1,5 @@
 import os
+import time
 
 import streamlit as st
 
@@ -10,13 +11,26 @@ REQUIRED_FILES = [
     "data/log3.json"
 ]
 
+APP_PAGES = 'app_pages'
+
 
 def show_loader():
-    st.set_page_config(page_title="Загрузка", layout="wide")
-    with st.spinner("Загружаю данные..."):
+    st.set_page_config(page_title="Загрузка", layout="wide",
+                       initial_sidebar_state="collapsed")
+
+    with st.status("⏳ Подготовка данных...", expanded=True) as status:
+        start_time = time.time()
+
+        st.write("🔍 Загружаю и проверяю логи...")
+        st.write("📦 Парсю новые записи...")
         pipeline()
-    st.success("Готово! Перезапусти страницу ⟳")
-    st.stop()
+
+        duration = time.time() - start_time
+        st.write(f"✅ Завершено за {duration:.2f} секунд.")
+        status.update(label="🎉 Загрузка завершена",
+                      state="complete", expanded=False)
+
+    st.rerun()
 
 
 def start():
@@ -25,11 +39,11 @@ def start():
 
     page_dict = {
         "Навигация": [
-            st.Page("app_pages/General.py", title="Общий обзор", icon="🌍"),
-            st.Page("app_pages/Errors.py", title="Ошибки", icon="🚨")
+            st.Page(f"{APP_PAGES}/General.py", title="Общий обзор", icon="🌍"),
+            st.Page(f"{APP_PAGES}/Errors.py", title="Ошибки", icon="🚨")
         ],
         "Для разработчиков": [
-            st.Page("app_pages/Old_dash.py", title="Вся статистика", icon="📊")
+            st.Page(f"{APP_PAGES}/Old_dash.py", title="Вся статистика", icon="📊")
         ]
     }
     pg = st.navigation(page_dict)
