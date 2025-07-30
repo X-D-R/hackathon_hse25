@@ -1,13 +1,15 @@
 import json
-from typing import Dict, Any
+from typing import Any, Dict
+
 import pandas as pd
 
-from metrics import *
+from .metrics import *
 
 
 class LogsAnalyzer:
     def __init__(self):
         self.clean_text = re.compile(r'\\[nrt]|[\n\r\t]|\s+')
+        self.metric_obj = MetricsCalculator()
 
     def _clean_text(self, text: str) -> str:
         """Очистка текста"""
@@ -35,20 +37,25 @@ class LogsAnalyzer:
         return self._parse_data(file_path)
 
     def parse_item(self, item: Dict, metric_obj: MetricsCalculator):
-        context = self._clean_text(" ".join(item['chat_history']['cleaned_contexts']))[:1000]
+        context = self._clean_text(
+            " ".join(item['chat_history']['cleaned_contexts']))[:1000]
         if len(context) == 0:
             context = "Cleaned context is empty, getting info from page contents in contexts: " + self._clean_text(
                 " ".join(self._extract_contents(item['chat_history']['old_contexts'][0])))[:1000]
-        answer = self._clean_text(item['chat_history']['old_answers'][0])[:1000]
+        answer = self._clean_text(
+            item['chat_history']['old_answers'][0])[:1000]
         naive_text_fluency = metric_obj.naive_text_fluency(answer)
         faithfulness_score = metric_obj.faithfulness_score(context, answer)
         question = self._clean_text(item['chat_history']['old_questions'][0])
         user_filters = item['user_filters']
         question_filters = item['question_filters']
-        context_filters = self._extract_topic_tags(" ".join(item['chat_history']['old_contexts']))
-        context_urls = self._extract_urls(item['chat_history']['old_contexts'][0])
+        context_filters = self._extract_topic_tags(
+            " ".join(item['chat_history']['old_contexts']))
+        context_urls = self._extract_urls(
+            item['chat_history']['old_contexts'][0])
         question_length = len(question.split())
-        context_count = item['chat_history']['old_contexts'][0].count("Document")
+        context_count = item['chat_history']['old_contexts'][0].count(
+            "Document")
         if "Размышления модели" in item:
             reasoning = item["Размышления модели"]
             relevance = item["Релевантность контекста"]
@@ -69,7 +76,7 @@ class LogsAnalyzer:
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
-            # 'time_question': item['Дата вопроса'],
+            'time_question': item['Дата вопроса'],
 
             # Дополнительные данные
             'context_urls': context_urls,
@@ -123,7 +130,8 @@ class LogsAnalyzer:
         elif extension == "xlsx":
             df.to_excel(f"{output_name}.xlsx", index=False)
         elif extension == "json":
-            df.to_json(f"{output_name}.json", orient='records', indent=2, force_ascii=False)
+            df.to_json(f"{output_name}.json", orient='records',
+                       indent=2, force_ascii=False)
         else:
             print("Unsupported format")
 
@@ -134,7 +142,3 @@ def main():
     data = log_obj.parse_all_data(f"{folder}log2.json")
     log_obj.export_data(data, output_name=f"{folder}result", extension="xlsx")
     log_obj.export_data(data, output_name=f"{folder}result", extension="json")
-
-
-if __name__ == "__main__":
-    main()

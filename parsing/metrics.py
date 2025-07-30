@@ -5,7 +5,7 @@ import evaluate
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from transformers import pipeline
+from transformers.pipelines import pipeline
 
 
 class MetricsCalculator:
