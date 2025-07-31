@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 
 import streamlit as st
@@ -22,21 +23,38 @@ def show_loader():
         start_time = time.time()
 
         st.write("🔍 Загружаю и проверяю логи...")
+        time.sleep(10)
         st.write("📦 Парсю новые записи...")
         pipeline()
 
         duration = time.time() - start_time
         st.write(f"✅ Завершено за {duration:.2f} секунд.")
         status.update(label="🎉 Загрузка завершена",
-                      state="complete", expanded=False)
+                      state="complete", expanded=True)
+        time.sleep(5)
 
     st.rerun()
 
 
+def run_pipeline_async():
+    while True:
+        try:
+            print("🚀 Старт фонового парсинга...")
+            start = time.time()
+            pipeline()
+            print(f"✅ Парсинг завершён за {time.time() - start:.2f} сек.")
+        except Exception as e:
+            print(f"⚠️ Ошибка при выполнении pipeline: {e}")
+        time.sleep(60)
+
+
 def start():
+    if not any(t.name == "BackgroundParser" for t in threading.enumerate()):
+        threading.Thread(target=run_pipeline_async, daemon=True,
+                         name="BackgroundParser").start()
+
     if not all(os.path.exists(f) for f in REQUIRED_FILES):
         show_loader()
-    pipeline()
 
     page_dict = {
         "Навигация": [

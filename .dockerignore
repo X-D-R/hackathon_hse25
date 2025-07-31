@@ -28,7 +28,3 @@ hackaton_metrics2.ipynb
 
 profiling_results/
 chatbot
-data/*
-
-parsing/__pycache__
-dashboard/__pycache__
