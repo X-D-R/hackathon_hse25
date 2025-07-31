@@ -18,13 +18,14 @@ __pycache__/
 Thumbs.db
 
 # Локальные конфиги Streamlit
-# .streamlit/config.toml
+.streamlit/config.toml
 
-# Excel-файлы 
-*.xlsx
 
 hackaton_metrics1.ipynb
 hackaton_metrics2.ipynb
 
 profiling_results/
 chatbot
+parsing/__pycache__
+data/*
+dashboard/__pycache__

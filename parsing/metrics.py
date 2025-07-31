@@ -16,7 +16,8 @@ class MetricsCalculator:
         self.bertscore = evaluate.load("bertscore")
         self.faithfulness_model = pipeline("text-classification",
                                            model="MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
-                                           return_all_scores=True)
+                                           return_all_scores=True,
+                                           device=-1)
         self.relevance_model = SentenceTransformer("all-MiniLM-L6-v2")
 
     def context_recall(self, ground_truth: str, contexts: List[str]) -> float:

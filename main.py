@@ -18,6 +18,7 @@ APP_PAGES = 'app_pages'
 def show_loader():
     st.set_page_config(page_title="Загрузка", layout="wide",
                        initial_sidebar_state="collapsed")
+    st.logo('logo.svg', size='large', link="")
 
     with st.status("⏳ Подготовка данных...", expanded=True) as status:
         start_time = time.time()
@@ -39,7 +40,7 @@ def show_loader():
 def run_pipeline_async():
     while True:
         try:
-            print("🚀 Старт фонового парсинга...")
+            print("Старт фонового парсинга...")
             start = time.time()
             pipeline()
             print(f"✅ Парсинг завершён за {time.time() - start:.2f} сек.")
@@ -49,13 +50,12 @@ def run_pipeline_async():
 
 
 def start():
-    if not any(t.name == "BackgroundParser" for t in threading.enumerate()):
-        threading.Thread(target=run_pipeline_async, daemon=True,
-                         name="BackgroundParser").start()
-
     if not all(os.path.exists(f) for f in REQUIRED_FILES):
         show_loader()
 
+    if not any(t.name == "BackgroundParser" for t in threading.enumerate()):
+        threading.Thread(target=run_pipeline_async, daemon=True,
+                         name="BackgroundParser").start()
     page_dict = {
         "Навигация": [
             st.Page(f"{APP_PAGES}/General.py", title="Общий обзор", icon="🌍"),
