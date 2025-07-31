@@ -22,17 +22,15 @@ def show_loader():
 
     with st.status("⏳ Подготовка данных...", expanded=True) as status:
         start_time = time.time()
-
         st.write("🔍 Загружаю и проверяю логи...")
-        time.sleep(10)
-        st.write("📦 Парсю новые записи...")
         pipeline()
-
         duration = time.time() - start_time
+        st.write("📦 Парсю новые записи...")
+        time.sleep(3)
         st.write(f"✅ Завершено за {duration:.2f} секунд.")
         status.update(label="🎉 Загрузка завершена",
                       state="complete", expanded=True)
-        time.sleep(5)
+        time.sleep(3)
 
     st.rerun()
 
