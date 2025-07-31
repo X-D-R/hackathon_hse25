@@ -29,16 +29,22 @@ class MetricsCalculator:
 
         return: average rouge for all contexts.
         """
-        rs = []
-        for c in contexts:
-            rs.append(
-                self.rouge.compute(
-                    predictions=[str(c)],
-                    references=[str(ground_truth)],
-                )["rouge2"]
-            )
+        rs = [self.rouge.compute(
+            predictions=[str(c)],
+            references=[str(ground_truth)],
+        )["rouge2"] for c in contexts]
 
         return float(np.mean(rs))
+
+    def _safe_bleu_precision(self, context, ground_truth):
+        try:
+            return self.bleu.compute(
+                predictions=[str(context)],
+                references=[str(ground_truth)],
+                max_order=2,
+            )["precisions"][1]
+        except ZeroDivisionError:
+            return 0
 
     def context_precision(self, ground_truth: str, contexts: List[str]) -> float:
         """
@@ -50,19 +56,7 @@ class MetricsCalculator:
 
         return: average bleu (precision2, w/o brevity penalty) for all contexts.
         """
-        bs = []
-        for c in contexts:
-
-            try:
-                bs.append(
-                    self.bleu.compute(
-                        predictions=[str(c)],
-                        references=[str(ground_truth)],
-                        max_order=2,
-                    )["precisions"][1]
-                )
-            except ZeroDivisionError:
-                bs.append(0)
+        bs = [self._safe_bleu_precision(c, ground_truth) for c in contexts]
 
         return float(np.mean(bs))
 
@@ -144,8 +138,7 @@ class MetricsCalculator:
 
     def faithfulness_score(self, context: str, answer: str) -> dict:
         result = self.faithfulness_model(f"{context} [SEP] {answer}")
-        faithfulness_scores = {item['label']
-            : item['score'] for item in result[0]}
+        faithfulness_scores = {item['label']: item['score'] for item in result[0]}
         return faithfulness_scores
 
     def answer_relevance(self, question: str, answer: str) -> float:
