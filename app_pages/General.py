@@ -28,45 +28,46 @@ def get_bar_color(level):
     }.get(level, "#dc3545")
 
 
-def calculate_metrics(df):
+def calculate_metrics(df, period=2):
+    df = df.copy()
+    df["time_question"] = pd.to_datetime(df["time_question"])
+    df["date"] = df["time_question"].dt.date
+
     total_negative = (df["user_mark"] < 0).sum()
     avg_time = df["response_time"].mean()
     conflict_percent = df["conflict_metric"].mean() * 100
 
-    n = len(df)
-    if n >= 3:
-        third = n // 3
-        early = df.iloc[:third]
-        middle = df.iloc[third:2*third]
-        late = df.iloc[2*third:]
+    daily_stats = df.groupby("date").agg({
+        "user_mark": lambda x: (x < 0).mean() * 100,
+        "response_time": "mean",
+        "conflict_metric": lambda x: x.mean() * 100
+    }).reset_index()
 
-        # Оцениваем рост от early → middle и от middle → late
-        neg_early = (early["user_mark"] < 0).mean() * 100
-        neg_middle = (middle["user_mark"] < 0).mean() * 100
-        neg_late = (late["user_mark"] < 0).mean() * 100
+    daily_stats = daily_stats.sort_values("date").reset_index(drop=True)
 
-        time_early = early["response_time"].mean()
-        time_middle = middle["response_time"].mean()
-        time_late = late["response_time"].mean()
+    if len(daily_stats) >= 2 * period:
+        prev_period = daily_stats.iloc[-2*period:-period]
+        curr_period = daily_stats.iloc[-period:]
 
-        conf_early = early["conflict_metric"].mean() * 100
-        conf_middle = middle["conflict_metric"].mean() * 100
-        conf_late = late["conflict_metric"].mean() * 100
+        prev_neg = prev_period["user_mark"].mean()
+        curr_neg = curr_period["user_mark"].mean()
 
-        # Финальный прирост — от первой к последней трети
-        delta_neg = neg_late - neg_early
-        delta_time = time_late - time_early
-        delta_conf = conf_late - conf_early
+        prev_time = prev_period["response_time"].mean()
+        curr_time = curr_period["response_time"].mean()
 
-        # Для мини-графиков — просто сравнение начальной и конечной трети
-        prev_neg, curr_neg = neg_early, neg_late
-        prev_time, curr_time = time_early, time_late
-        prev_conf, curr_conf = conf_early, conf_late
+        prev_conf = prev_period["conflict_metric"].mean()
+        curr_conf = curr_period["conflict_metric"].mean()
+
+        delta_neg = curr_neg - prev_neg
+        delta_time = curr_time - prev_time
+        delta_conf = curr_conf - prev_conf
     else:
-        delta_neg = delta_time = delta_conf = 0.0
+        # Недостаточно данных для оценки тренда
         prev_neg = curr_neg = total_negative
         prev_time = curr_time = avg_time
         prev_conf = curr_conf = conflict_percent
+
+        delta_neg = delta_time = delta_conf = 0.0
 
     return {
         "total_negative": total_negative,
@@ -115,7 +116,8 @@ def show_metrics(df_filtered, metrics):
         else:
             st.metric("⚠️ Конфликтность",
                       f"{metrics['conflict_percent']:.1f}%", f"{delta:.1f}%", delta_color="inverse")
-        plot_metric_trend_over_time(df_filtered, "conflict_metric", inverse=True)
+        plot_metric_trend_over_time(
+            df_filtered, "conflict_metric", inverse=True)
 
 
 def draw_graphs(graphs):
