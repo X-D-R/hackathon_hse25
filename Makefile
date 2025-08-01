@@ -11,7 +11,7 @@ endif
 
 # Запуск в режиме продакшн
 run:
-	docker compose up
+	docker compose up -d
 
 # Запуск в режиме разработки
 dev:
@@ -23,7 +23,7 @@ build:
 
 # Пересборка и запуск
 rebuild:
-	docker compose build && docker compose up
+	docker compose build && docker compose up -d
 
 # Пересборка и запуск в режиме разработки
 rebuild_dev:
