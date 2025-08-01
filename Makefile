@@ -1,4 +1,4 @@
-.PHONY: run, dev, build, rebuild, rebuild_dev, clean
+.PHONY: run, dev, build, rebuild, rebuild_dev, clean, view_logs
 
 IMAGE_NAME=chatbot-dashboard
 CONTAINER_NAME=chatbot-dashboard
@@ -33,3 +33,6 @@ rebuild_dev:
 clean:
 	docker rm -f $(CONTAINER_NAME) || true
 	docker rmi -f $(IMAGE_NAME) || true
+
+view_logs:
+	docker logs -f chatbot-dashboard
