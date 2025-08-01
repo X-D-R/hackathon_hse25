@@ -12,7 +12,7 @@ def main():
     st_autorefresh(interval=time_refresh * 1000, key="datarefresh")
     st.logo('logo.svg', size='large', link="")
 
-    st.title("🛑 Системные сбои и отклонения")
+    st.title("Системные сбои и отклонения")
 
     data = load_data("data/result.json")
     if not data:

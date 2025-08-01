@@ -145,7 +145,7 @@ def main():
     st.set_page_config(layout="wide")
     st_autorefresh(interval=time_refresh * 1000, key="datarefresh")
     st.logo('logo.svg', size='large', link='')
-    st.title("📊 Обзор общей картины")
+    st.title("Обзор общей картины")
 
     data = load_data("data/result.json")
     if not data:
