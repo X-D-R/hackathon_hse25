@@ -1,8 +1,18 @@
+import locale
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from scipy.stats import linregress
+
+try:
+    locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+except:
+    try:
+        locale.setlocale(locale.LC_TIME, 'ru_RU')
+    except:
+        pass
 
 
 def show_plot_with_download_below(fig, filename: str):
@@ -351,31 +361,46 @@ class Plots:
         show_plot_with_download_below(fig, "avg_user_mark_by_category")
 
 
-def plot_metric_trend_over_time(df: pd.DataFrame, column: str, inverse=True, height=160, epsilon=0.01):
-    if df.empty or column not in df.columns:
-        st.info("Нет данных для тренда")
+def plot_metric_trend_over_time(df: pd.DataFrame, column: str, inverse=True, height=160, epsilon=0.01, window=5):
+    if df.empty or column not in df.columns or "time_question" not in df.columns:
+        st.info("Нет данных для тренда по дням")
         return
 
-    df_sorted = df.copy().reset_index(drop=True)
-    df_sorted["rolling"] = df_sorted[column].rolling(
-        window=5, min_periods=1).mean()
+    df["time_question"] = pd.to_datetime(df["time_question"])
+    df["date"] = df["time_question"].dt.date
 
-    x = list(range(len(df_sorted)))
-    y = df_sorted["rolling"]
-    slope, _, _, _, _ = linregress(x, y)
+    if column == "user_mark":
+        daily = df.groupby("date")["user_mark"].apply(
+            lambda x: (x < 0).sum()
+        ).reset_index(name="value")
+    else:
+        daily = df.groupby("date")[column].mean().reset_index(name="value")
 
-    # 💡 Логика инверсии:
+    daily = daily.sort_values("date").reset_index(drop=True)
+
+    if column != "user_mark":
+        daily["rolling"] = daily["value"].rolling(
+            window=window, min_periods=1).mean()
+    else:
+        daily["rolling"] = daily["value"]
+
+    x = pd.to_datetime(daily["date"]).dt.strftime(
+        '%d %b').str.replace('.', '', regex=False)
+    y = daily["rolling"]
+
+    slope, _, _, _, _ = linregress(range(len(y)), y)
+
     is_improvement = (
         abs(slope) >= epsilon and
         ((slope < 0 and inverse) or (slope > 0 and not inverse))
     )
 
     if abs(slope) < epsilon:
-        color = "#888888"  # серый — без изменений
+        color = "#888888"
     elif is_improvement:
-        color = "#28a745"  # улучшение
+        color = "#28a745"
     else:
-        color = "#dc3545"  # ухудшение
+        color = "#dc3545"
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -390,9 +415,7 @@ def plot_metric_trend_over_time(df: pd.DataFrame, column: str, inverse=True, hei
     fig.update_layout(
         height=height,
         margin=dict(l=10, r=10, t=30, b=20),
-        xaxis_title="№ запроса",
-        yaxis_title="Значение",
         template="plotly_dark"
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key=f"plot_{column}")

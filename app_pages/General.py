@@ -95,9 +95,7 @@ def show_metrics(df_filtered, metrics):
         else:
             st.metric("👎 Отрицательных оценок",
                       metrics["total_negative"], f"{delta:.1f}%", delta_color="inverse")
-        plot_metric_trend_over_time(df_filtered.assign(neg=(df_filtered["user_mark"] < 0).astype(int)),
-                                    column="neg",
-                                    inverse=True)
+        plot_metric_trend_over_time(df_filtered, "user_mark", inverse=True)
 
     with col2:
         delta = metrics["delta_time"]
@@ -107,9 +105,7 @@ def show_metrics(df_filtered, metrics):
         else:
             st.metric("⏱ Среднее время ответа",
                       f"{metrics['avg_time']:.2f} сек", f"{delta:.2f} сек", delta_color="inverse")
-        plot_metric_trend_over_time(df_filtered,
-                                    column="response_time",
-                                    inverse=True)
+        plot_metric_trend_over_time(df_filtered, "response_time", inverse=True)
 
     with col3:
         delta = metrics["delta_conf"]
@@ -119,9 +115,7 @@ def show_metrics(df_filtered, metrics):
         else:
             st.metric("⚠️ Конфликтность",
                       f"{metrics['conflict_percent']:.1f}%", f"{delta:.1f}%", delta_color="inverse")
-        plot_metric_trend_over_time(df_filtered,
-                                    column="conflict_metric",
-                                    inverse=True)
+        plot_metric_trend_over_time(df_filtered, "conflict_metric", inverse=True)
 
 
 def draw_graphs(graphs):
