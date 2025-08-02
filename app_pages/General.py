@@ -157,12 +157,13 @@ def main():
         st.warning("Данные не обработаны.")
         st.stop()
 
-    df_filtered = sidebar_layout(df)
-
     status = get_system_alert_status(df)
     render_system_alert(status)
     st.page_link('app_pages/Errors.py',
                  label='Показать ошибки', use_container_width=True, icon="ℹ️")
+
+    df_filtered = sidebar_layout(df) if status['level'] == "green" else sidebar_layout(
+        df[df["conflict_metric"] == 1])
 
     color_sequence = get_color_palette(status['level'])
     bar_color = get_bar_color(status['level'])
