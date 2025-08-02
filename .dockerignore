@@ -30,3 +30,5 @@ parsing/__pycache__
 dashboard/__pycache__
 Images
 README.md
+start_server.sh
+MakeFile
