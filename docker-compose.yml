@@ -6,3 +6,6 @@ services:
     container_name: chatbot-dashboard
     ports:
       - "8501:8501"
+    environment:
+      - TZ=Europe/Moscow
+

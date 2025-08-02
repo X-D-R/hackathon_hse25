@@ -12,13 +12,14 @@ services:
       - "8501:8501"
     command: >
       bash -c "
-        pip install --upgrade pip &&
         pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu &&
         pip install --no-cache-dir -r requirements.txt &&
         streamlit run main.py --server.port=8501 --server.address=0.0.0.0 --server.runOnSave true
       "
     environment:
       - PYTHONUNBUFFERED=1
+      - TZ=Europe/Moscow
+    
 
 volumes:
   pip_cache:
