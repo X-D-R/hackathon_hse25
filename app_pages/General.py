@@ -28,6 +28,15 @@ def get_bar_color(level):
     }.get(level, "#dc3545")
 
 
+def slope_to_color(slope, inverse=True, epsilon=0.01):
+    if abs(slope) < epsilon:
+        return "#888888"
+    elif (slope < 0 and inverse) or (slope > 0 and not inverse):
+        return "#28a745"
+    else:
+        return "#dc3545"
+
+
 def calculate_metrics(df, window=5, epsilon=0.01):
     df = df.copy()
     df["time_question"] = pd.to_datetime(df["time_question"])
@@ -72,6 +81,9 @@ def calculate_metrics(df, window=5, epsilon=0.01):
         "rolling_user_mark": daily["rolling_user_mark"].tolist(),
         "rolling_response_time": daily["rolling_response_time"].tolist(),
         "rolling_conflict_metric": daily["rolling_conflict_metric"].tolist(),
+        "color_user_mark": slope_to_color(delta_neg, inverse=True),
+        "color_response_time": slope_to_color(delta_time, inverse=True),
+        "color_conflict_metric": slope_to_color(delta_conf, inverse=True),
     }
 
 
@@ -86,7 +98,8 @@ def show_metrics(df_filtered, metrics):
         else:
             st.metric("👎 Отрицательных оценок",
                       metrics["total_negative"], f"{delta:.1f}%", delta_color="inverse")
-        plot_metric_trend_over_time(df_filtered, "user_mark", inverse=True)
+        plot_metric_trend_over_time(
+            df_filtered, "user_mark", inverse=True, color=metrics["color_user_mark"])
 
     with col2:
         delta = metrics["delta_time"]
@@ -96,7 +109,8 @@ def show_metrics(df_filtered, metrics):
         else:
             st.metric("⏱ Среднее время ответа",
                       f"{metrics['avg_time']:.2f} сек", f"{delta:.2f} сек", delta_color="inverse")
-        plot_metric_trend_over_time(df_filtered, "response_time", inverse=True)
+        plot_metric_trend_over_time(
+            df_filtered, "response_time", inverse=True, color=metrics["color_response_time"])
 
     with col3:
         delta = metrics["delta_conf"]
@@ -107,7 +121,7 @@ def show_metrics(df_filtered, metrics):
             st.metric("⚠️ Конфликтность",
                       f"{metrics['conflict_percent']:.1f}%", f"{delta:.1f}%", delta_color="inverse")
         plot_metric_trend_over_time(
-            df_filtered, "conflict_metric", inverse=True)
+            df_filtered, "conflict_metric", inverse=True, color=metrics["color_conflict_metric"])
 
 
 def draw_graphs(graphs):

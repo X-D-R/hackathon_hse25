@@ -401,20 +401,8 @@ def plot_metric_trend_over_time(df: pd.DataFrame, column: str, color=None, inver
         '%d %b').str.replace('.', '', regex=False)
     y = daily["rolling"]
 
-    slope, _, _, _, _ = linregress(range(len(y)), y)
-
-    is_improvement = (
-        abs(slope) >= epsilon and
-        ((slope < 0 and inverse) or (slope > 0 and not inverse))
-    )
-
     if color is None:
-        if abs(slope) < epsilon:
-            color = "#888888"
-        elif is_improvement:
-            color = "#28a745"
-        else:
-            color = "#dc3545"
+        color = "#888888"
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
