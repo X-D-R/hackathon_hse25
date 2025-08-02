@@ -60,7 +60,7 @@ def start():
             st.Page(f"{APP_PAGES}/Errors.py", title="Ошибки", icon="🚨")
         ],
         "Для разработчиков": [
-            st.Page(f"{APP_PAGES}/Old_dash.py",
+            st.Page(f"{APP_PAGES}/All_rewiew.py",
                     title="Вся статистика", icon="📊")
         ]
     }
