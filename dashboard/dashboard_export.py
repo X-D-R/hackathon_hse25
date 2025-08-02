@@ -6,49 +6,77 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 
 
-def create_excel_file(normal, bad, unsure):
+def download_excel(df, filename="chatbot_logs.xlsx"):
     wb = Workbook()
-    headers = [
-        "Вопрос", "Ответ AI", "Категория вопроса",
-        "user_filters", "question_filters", "Очищенный контекст", "Все контексты"
-    ]
+    ws = wb.active
+    ws.title = "Данные"
 
-    def make_headers_bold(ws):
-        for cell in ws[1]:
-            cell.font = Font(bold=True)
+    column_mapping = {
+        "selected_role": "Роль пользователя",
+        "campus": "Кампус",
+        "education_level": "Уровень образования",
+        "question_category": "Категория вопроса",
+        "user_question": "Вопрос пользователя",
+        "user_filters": "Фильтры пользователя",
+        "question_filters": "Фильтры вопроса",
+        "context_filters": "Фильтры контекста",
+        "answer": "Ответ AI",
+        "user_mark": "Оценка пользователя",
+        "contexts": "Контексты",
+        "time_question": "Время вопроса",
+        "context_urls": "Ссылки на источники",
+        "question_length": "Длина вопроса",
+        "context_count": "Кол-во контекстов",
+        "answer_length": "Длина ответа",
+        "contains_links": "Содержит ссылки",
+        "reasoning": "Наличие рассуждений",
+        "response_time": "Время ответа (сек)",
+        "sentence_count": "Кол-во предложений",
+        "word_count": "Кол-во слов",
+        "avg_sentence_len": "Ср. длина предложения",
+        "unique_word_ratio": "Уникальность слов (%)",
+        "faithfulness_score_entailment": "Правдоподобие: подтверждение",
+        "faithfulness_score_neutral": "Правдоподобие: нейтральное",
+        "faithfulness_score_contradiction": "Правдоподобие: противоречие",
+        "answer_correctness_literal": "Точность ответа (буквальная)",
+        "answer_correctness_neural": "Точность ответа (нейронная)",
+        "answer_relevance": "Актуальность ответа",
+        "jaccard_similarity": "Сходство (Жаккар)",
+        "cosine_tag_answer": "Косинусная близость (теги-ответ)",
+        "relevance": "Релевантность",
+        "has_contexts": "Есть контексты",
+        "conflict_metric": "Метрика конфликта"
+    }
 
-    def set_manual_column_widths(ws):
-        column_widths = {
-            "A": 40, "B": 50, "C": 20, "D": 30, "E": 30, "F": 50, "G": 70
-        }
-        for col_letter, width in column_widths.items():
-            ws.column_dimensions[col_letter].width = width
+    translated_headers = [column_mapping.get(col, col) for col in df.columns]
+    ws.append(translated_headers)
 
-    def fill_sheet(ws, data, title):
-        ws.title = title
-        ws.append(headers)
-        make_headers_bold(ws)
-        for case in data:
-            ws.append([
-                case.get("question", ""),
-                case.get("answer", ""),
-                case.get("question_category", ""),
-                ", ".join(case.get("user_filters", [])),
-                ", ".join(case.get("question_filters", [])),
-                case.get("ground_truth", ""),
-                "\n---\n".join(case.get("contexts", []))
-            ])
-        set_manual_column_widths(ws)
+    # Данные
+    for row in df.itertuples(index=False):
+        safe_row = []
+        for cell in row:
+            if isinstance(cell, list):
+                safe_row.append(", ".join(map(str, cell)))
+            else:
+                safe_row.append(str(cell) if cell is not None else "")
+        ws.append(safe_row)
 
-    ws1 = wb.active
-    fill_sheet(ws1, normal, "Вопросы с ответом")
-    fill_sheet(wb.create_sheet(), bad, "Вопросы без ответа")
-    fill_sheet(wb.create_sheet(), unsure, "Частичный ответ")
+    for col in ws.columns:
+        max_len = max(len(str(cell.value))
+                      if cell.value else 0 for cell in col)
+        col_letter = col[0].column_letter
+        ws.column_dimensions[col_letter].width = max_len + 2
 
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
-    return output
+
+    st.download_button(
+        label="📥 Скачать Excel",
+        data=output,
+        file_name=filename,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 
 def download_json(data):
@@ -59,16 +87,3 @@ def download_json(data):
         file_name="chatbot_logs.json",
         mime="application/json"
     )
-
-
-def split_by_answer_quality(data):
-    normal, bad, unsure = [], [], []
-    for case in data:
-        answer = case.get("answer", "")
-        if not answer.strip():
-            bad.append(case)
-        elif any(x in answer.lower() for x in ["возможно", "не уверен", "не могу сказать"]):
-            unsure.append(case)
-        else:
-            normal.append(case)
-    return normal, bad, unsure

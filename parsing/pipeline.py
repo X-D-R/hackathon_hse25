@@ -92,8 +92,6 @@ def pipeline():
         all_data = cache.get_all()
         analyzer.export_data(all_data, RESULT_PATH.replace(
             ".json", ""), extension="json")
-        analyzer.export_data(all_data, RESULT_PATH.replace(
-            ".json", ""), extension="xlsx")
         log(f"✅ Добавлено новых записей: {parsed_count}")
 
     save_last_time(current_time)

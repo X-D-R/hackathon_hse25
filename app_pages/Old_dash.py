@@ -45,17 +45,7 @@ def main():
     with col1:
         download_json(filtered_df.to_dict(orient="records"))
     with col2:
-        normal_q, bad_q, unsure_q = split_by_answer_quality(
-            filtered_df.to_dict(orient="records"))
-        excel_file = '../data/result.xlsx'
-
-        st.download_button(
-            label="📥 Скачать Excel",
-            data=excel_file,
-            file_name="chatbot_logs.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
+        download_excel(filtered_df)
     # --- 1) Отдельные графики для метрик качества ---
     st.markdown("## Отдельные метрики качества")
     graphs.plot_quality_metrics_separate()
