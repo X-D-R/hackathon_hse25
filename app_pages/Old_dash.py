@@ -35,30 +35,41 @@ def main():
     graphs = Plots(filtered_df)
 
     # Заголовок приложения
-    st.markdown("<h1 style='text-align: center;'>Мониторинг качества чат-бота</h1>",
-                unsafe_allow_html=True)
+    st.markdown("# Мониторинг всего бота")
 
-    # Кнопка для скачивания отфильтрованных данных в формате JSON
-    st.markdown("### Экспорт данных")
-
+    # Кнопка для скачивания отфильтрованных данных в формате JSON и Excel
+    st.markdown("### 📥 Экспорт данных")
     col1, col2 = st.columns(2)
     with col1:
         download_json(filtered_df.to_dict(orient="records"))
     with col2:
         download_excel(filtered_df)
-    # --- 1) Отдельные графики для метрик качества ---
+    st.divider()
+
+    # KPI-блок
+    st.markdown("### Основные показатели")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Всего записей", len(filtered_df))
+    col2.metric("Среднее время ответа",
+                f"{filtered_df['response_time'].mean():.1f} сек")
+    col3.metric("Доля негативных оценок",
+                f"{(filtered_df['user_mark'] < 0).mean() * 100:.1f}%")
+    col4.metric("Средний конфликт",
+                f"{filtered_df['conflict_metric'].mean() * 100:.1f}%")
+    st.divider()
+
+    # --- Метрики качества ---
     st.markdown("## Отдельные метрики качества")
     graphs.plot_quality_metrics_separate()
 
-    # --- 2) Сводный график метрик качества ---
     st.markdown("## Сводный график метрик качества")
     graphs.plot_quality_metrics_combined()
 
-    # --- 3) Основные метрики ---
+    # --- Основные метрики ---
     st.markdown("## Основные метрики")
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.subheader("Распределение запросов по кампусам")
+        st.subheader("Распределение по кампусам")
         graphs.plot_pie_chart("campus", "unused_title")
     with col2:
         st.subheader("Распределение по уровням образования")
@@ -67,35 +78,32 @@ def main():
         st.subheader("Частота уточняющих вопросов")
         graphs.plot_follow_up_pie_chart()
 
-    # --- 4) Сравнение времени ответа по категориям ---
-    st.markdown("## Сравнение времени ответа по категориям")
+    # --- Время ответа ---
+    st.markdown("## Сравнение времени ответа")
     graphs.plot_response_time_by_category()
 
-    # --- 5) Среднее время ответа (по кампусам и группам) ---
-    st.markdown("## Сравнения по времени ответа")
     col4, col5 = st.columns(2)
     with col4:
-        st.subheader("Среднее время ответа по кампусам")
+        st.subheader("По кампусам")
         graphs.plot_response_time_chart_with_campus()
     with col5:
-        st.subheader("Усреднённое время ответа (по группам)")
+        st.subheader("Усреднённое время (по группам)")
         graphs.plot_averaged_response_time_chart(bin_size=10)
 
-    # --- 6) Дополнительные графики ---
-    st.subheader("Распределение времени ответа (BoxPlot)")
+    st.subheader("BoxPlot времени ответа")
     graphs.plot_response_time_boxplot()
 
-    # --- 7) Метрики по ответу и тексту ---
-    st.markdown("## Оценка пользователя")
+    # --- Оценки и текстовые метрики ---
+    st.markdown("## Распределение пользовательских оценок")
     graphs.plot_user_mark_distribution()
 
-    st.markdown("## Наивные текстовые метрики")
+    st.markdown("## Текстовые метрики")
     graphs.plot_naive_text_metrics()
 
-    st.markdown("## Верность ответа контексту")
+    st.markdown("## Верность ответов")
     graphs.plot_faithfulness_scores()
 
-    st.markdown("## Сходство ответа с контекстом")
+    st.markdown("## Сходство с контекстом")
     graphs.plot_answer_correctness()
 
 

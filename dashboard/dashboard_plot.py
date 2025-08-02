@@ -73,6 +73,8 @@ class Plots:
             y="response_time",
             color="campus",
             text_auto=True,
+            labels={"campus": "",
+                    "response_time": "Среднее время ответа (сек)"},
             color_discrete_sequence=self.color_sequence
         )
         show_plot_with_download_below(fig, "resp_time_by_campus")
@@ -88,7 +90,7 @@ class Plots:
             grouped,
             x="group",
             y="response_time",
-            labels={"group": f"Номер группы (по {bin_size} запросов)",
+            labels={"group": "",
                     "response_time": "Среднее время ответа (сек)"}
         )
         show_plot_with_download_below(fig, "resp_time_averaged")
@@ -184,7 +186,7 @@ class Plots:
                 x="question_category",
                 y=metric,
                 title=f"Метрика: {metric}",
-                labels={"question_category": "Категория", metric: "Среднее"}
+                labels={"question_category": "", metric: "Среднее"}
             )
             with cols[i % 3]:
                 show_plot_with_download_below(fig, f"separate_{metric}")
@@ -226,8 +228,7 @@ class Plots:
             y="Значение",
             color="Метрика",
             barmode="group",
-            title="Сводный график метрик качества",
-            labels={"question_category": "Категория",
+            labels={"question_category": "",
                     "Значение": "Среднее (0–100)"}
         )
         show_plot_with_download_below(fig, "combined_quality_metrics")
@@ -239,7 +240,6 @@ class Plots:
             self.data,
             x="user_mark",
             nbins=3,
-            title="Распределение пользовательских оценок",
             color_discrete_sequence=self.color_sequence
         )
         fig.update_layout(xaxis_title="Оценка", yaxis_title="Количество")
@@ -287,10 +287,9 @@ class Plots:
             box=True,
             points="all",
             color="Тип",
-            title="Faithfulness Score — насколько ответ логически соответствует извлечённым документам",
             color_discrete_sequence=self.color_sequence
         )
-        fig.update_layout(xaxis_title="Класс соответствия",
+        fig.update_layout(xaxis_title="",
                           yaxis_title="Вероятность")
         show_plot_with_download_below(fig, "faithfulness_scores")
 
@@ -305,7 +304,6 @@ class Plots:
                 x="answer_correctness_literal",
                 y="answer_correctness_neural",
                 trendline="ols",
-                title="Сходство ответа с контекстом (лингвистическое vs семантическое)",
                 labels={
                     "answer_correctness_literal": "Literal (лингвистическое)",
                     "answer_correctness_neural": "Neural (семантическое)"
