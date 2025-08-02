@@ -28,7 +28,7 @@ def get_bar_color(level):
     }.get(level, "#dc3545")
 
 
-def calculate_metrics(df, period=2):
+def calculate_metrics(df, window=5, epsilon=0.01):
     df = df.copy()
     df["time_question"] = pd.to_datetime(df["time_question"])
     df["date"] = df["time_question"].dt.date
@@ -37,37 +37,30 @@ def calculate_metrics(df, period=2):
     avg_time = df["response_time"].mean()
     conflict_percent = df["conflict_metric"].mean() * 100
 
-    daily_stats = df.groupby("date").agg({
-        "user_mark": lambda x: (x < 0).mean() * 100,
+    daily = df.groupby("date").agg({
+        "user_mark": lambda x: (x < 0).sum(),
         "response_time": "mean",
         "conflict_metric": lambda x: x.mean() * 100
     }).reset_index()
 
-    daily_stats = daily_stats.sort_values("date").reset_index(drop=True)
+    daily = daily.sort_values("date").reset_index(drop=True)
 
-    if len(daily_stats) >= 2 * period:
-        prev_period = daily_stats.iloc[-2*period:-period]
-        curr_period = daily_stats.iloc[-period:]
+    # rolling применим только к response_time и conflict_metric
+    daily["rolling_user_mark"] = daily["user_mark"]
+    daily["rolling_response_time"] = daily["response_time"].rolling(
+        window, min_periods=1).mean()
+    daily["rolling_conflict_metric"] = daily["conflict_metric"].rolling(
+        window, min_periods=1).mean()
 
-        prev_neg = prev_period["user_mark"].mean()
-        curr_neg = curr_period["user_mark"].mean()
+    # Вычислим наклоны
+    def slope_of(series):
+        if len(series) < 2:
+            return 0.0
+        return linregress(range(len(series)), series)[0]
 
-        prev_time = prev_period["response_time"].mean()
-        curr_time = curr_period["response_time"].mean()
-
-        prev_conf = prev_period["conflict_metric"].mean()
-        curr_conf = curr_period["conflict_metric"].mean()
-
-        delta_neg = curr_neg - prev_neg
-        delta_time = curr_time - prev_time
-        delta_conf = curr_conf - prev_conf
-    else:
-        # Недостаточно данных для оценки тренда
-        prev_neg = curr_neg = total_negative
-        prev_time = curr_time = avg_time
-        prev_conf = curr_conf = conflict_percent
-
-        delta_neg = delta_time = delta_conf = 0.0
+    delta_neg = slope_of(daily["rolling_user_mark"])
+    delta_time = slope_of(daily["rolling_response_time"])
+    delta_conf = slope_of(daily["rolling_conflict_metric"])
 
     return {
         "total_negative": total_negative,
@@ -76,12 +69,9 @@ def calculate_metrics(df, period=2):
         "delta_neg": delta_neg,
         "delta_time": delta_time,
         "delta_conf": delta_conf,
-        "prev_neg": prev_neg,
-        "curr_neg": curr_neg,
-        "prev_time": prev_time,
-        "curr_time": curr_time,
-        "prev_conf": prev_conf,
-        "curr_conf": curr_conf
+        "rolling_user_mark": daily["rolling_user_mark"].tolist(),
+        "rolling_response_time": daily["rolling_response_time"].tolist(),
+        "rolling_conflict_metric": daily["rolling_conflict_metric"].tolist(),
     }
 
 
