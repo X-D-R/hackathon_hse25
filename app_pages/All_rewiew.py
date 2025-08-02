@@ -39,7 +39,7 @@ def main():
                 unsafe_allow_html=True)
 
     # Кнопка для скачивания отфильтрованных данных в формате JSON и Excel
-    st.markdown("### 📥 Экспорт данных")
+    st.markdown("### Экспорт данных")
     col1, col2 = st.columns(2)
     with col1:
         download_json(filtered_df.to_dict(orient="records"))
