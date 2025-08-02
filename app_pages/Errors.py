@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from streamlit import column_config as cc
 from streamlit_autorefresh import st_autorefresh
 
 from dashboard import load_data, process_data
@@ -35,7 +36,14 @@ def main():
     long_answers = df[df["response_time"] > time]
     empty_responses = df[df["answer"].str.strip(
     ) == "Сервер не отвечает, пожалуйста, попробуйте позже."]
-    short_responses = df[df["answer"].str.split().str.len() < 3]
+    short_responses = df[
+        (df["answer"].str.len() < 30) |
+        (df["answer"].str.split().str.len() < 5) |
+        (df["answer"].str.strip().str.lower().isin([
+            "да", "нет", "не знаю", "не понял", "ок", "?", "не уверен"
+        ]))
+    ]
+
     low_mark = df[df["user_mark"] < 0]
 
     cases = []
@@ -43,11 +51,12 @@ def main():
     if len(long_answers):
         cases.append({
             "title": f"⏱ Долгое время генерации (>{time} сек)",
-            "df": long_answers[["user_question", "answer", "response_time", 'question_category']].rename(columns={
+            "df": long_answers[["user_question", "answer", "response_time", 'question_category', "time_question"]].rename(columns={
                 "user_question": "Вопрос",
                 "answer": "Ответ",
                 "response_time": "Время (сек)",
-                "question_category": "Категория"
+                "question_category": "Категория",
+                "time_question": "Время запроса",
             }),
             "count": len(long_answers)
         })
@@ -55,10 +64,11 @@ def main():
     if len(empty_responses):
         cases.append({
             "title": "📭 Пустой ответ модели",
-            "df": empty_responses[["user_question", "answer", 'question_category']].rename(columns={
+            "df": empty_responses[["user_question", "answer", 'question_category', "time_question"]].rename(columns={
                 "user_question": "Вопрос",
                 "answer": "Ответ",
                 "question_category": "Категория",
+                "time_question": "Время запроса",
             }),
             "count": len(empty_responses)
         })
@@ -66,10 +76,11 @@ def main():
     if len(short_responses):
         cases.append({
             "title": "✂️ Слишком короткий ответ (< 3 слов)",
-            "df": short_responses[["user_question", "answer", 'question_category']].rename(columns={
+            "df": short_responses[["user_question", "answer", 'question_category', "time_question"]].rename(columns={
                 "user_question": "Вопрос",
                 "answer": "Ответ",
                 "question_category": "Категория",
+                "time_question": "Время запроса",
             }),
             "count": len(short_responses)
         })
@@ -77,48 +88,46 @@ def main():
     if len(low_mark):
         cases.append({
             "title": "⚠️ Низкая оценка",
-            "df": low_mark[["user_question", "answer", "user_mark", 'question_category']].rename(columns={
+            "df": low_mark[["user_question", "answer", "user_mark", 'question_category', "time_question"]].rename(columns={
                 "user_question": "Вопрос",
                 "answer": "Ответ",
                 "question_category": "Категория",
-                "user_mark": "Оценка"
+                "user_mark": "Оценка",
+                "time_question": "Время запроса",
             }),
             "count": len(low_mark)
         })
 
-    # --- Рендер ---
-    if len(cases) <= 2:
-        for i, case in enumerate(cases):
-            with st.expander(f"{case['title']} (Найдено: {case['count']})", expanded=True):
-                df_to_show = case["df"]
+    for i, case in enumerate(cases):
+        with st.expander(f"{case['title']} (Найдено: {case['count']})", expanded=True):
+            df_to_show = case["df"]
 
-                if 'question_category' in df_to_show.columns:
-                    cats = df_to_show['Категория'].dropna().unique().tolist()
-                    selected = st.multiselect(
-                        label=" ", options=cats, default=cats, key=f"cat_{i}"
-                    )
-                    df_to_show = df_to_show[df_to_show["Категория"].isin(
-                        selected)]
+            if "Время запроса" in df_to_show.columns:
+                df_to_show["Время запроса"] = pd.to_datetime(
+                    df_to_show["Время запроса"]).dt.strftime("%d.%m.%Y %H:%M:%S")
 
-                st.dataframe(df_to_show, use_container_width=True)
-    else:
-        for i in range(0, len(cases), 2):
-            cols = st.columns(min(2, len(cases) - i))
-            for j, col in enumerate(cols):
-                case = cases[i + j]
-                with col.expander(f"{case['title']} (Найдено: {case['count']})", expanded=True):
-                    df_to_show = case["df"]
+            if 'Категория' in df_to_show.columns:
+                cats = df_to_show['Категория'].dropna().unique().tolist()
+                selected = st.multiselect(
+                    label=" ", options=cats, default=cats, key=f"cat_{i}"
+                )
+                df_to_show = df_to_show[df_to_show["Категория"].isin(selected)]
 
-                    if 'Категория' in df_to_show.columns:
-                        cats = df_to_show['Категория'].dropna(
-                        ).unique().tolist()
-                        selected = st.multiselect(
-                            label=" ", options=cats, default=cats, key=f"cat_{i}_{j}"
-                        )
-                        df_to_show = df_to_show[df_to_show["Категория"].isin(
-                            selected)]
+            # Конфиг колонок: фиксируем "Вопрос" и "Ответ", остальные авто
+            fixed_config = {
+                "Вопрос": cc.TextColumn(width="medium"),
+                "Ответ": cc.TextColumn(width="medium")
+            }
+            auto_config = {
+                col: cc.Column() for col in df_to_show.columns if col not in fixed_config
+            }
+            final_config = {**fixed_config, **auto_config}
 
-                    st.dataframe(df_to_show, use_container_width=True)
+            st.dataframe(
+                df_to_show,
+                use_container_width=True,
+                column_config=final_config
+            )
 
 
 def all_view(df, status):
@@ -130,7 +139,7 @@ def all_view(df, status):
     else:
         suspicious_df = df[df["conflict_metric"] == 1][
             ["user_question", "answer", "question_category",
-                "response_time", "user_mark"]
+                "response_time", "user_mark", "time_question"]
         ].reset_index(drop=True)
 
         # --- Фильтр по категории ---
@@ -141,21 +150,32 @@ def all_view(df, status):
         suspicious_df = suspicious_df[suspicious_df["question_category"].isin(
             selected_cats)]
 
-        # # --- Поиск по тексту ---
-        # search_text = st.text_input("🔍 Поиск по вопросу", key="search_allview")
-        # if search_text:
-        #     suspicious_df = suspicious_df[suspicious_df["user_question"].str.contains(
-        #         search_text, case=False, na=False)]
+        df_to_show = suspicious_df.rename(columns={
+            "user_question": "Вопрос",
+            "answer": "Ответ",
+            "response_time": "Время (сек)",
+            "question_category": "Категория",
+            "user_mark": "Оценка",
+            "time_question": "Время запроса",
+        })
+
+        if "Время запроса" in df_to_show.columns:
+            df_to_show["Время запроса"] = pd.to_datetime(
+                df_to_show["Время запроса"]).dt.strftime("%d.%m.%Y %H:%M:%S")
+
+        fixed_config = {
+            "Вопрос": cc.TextColumn(width="medium"),
+            "Ответ": cc.TextColumn(width="medium")
+        }
+        auto_config = {
+            col: cc.Column() for col in df_to_show.columns if col not in fixed_config
+        }
+        final_config = {**fixed_config, **auto_config}
 
         st.dataframe(
-            suspicious_df.rename(columns={
-                "user_question": "Вопрос",
-                "answer": "Ответ",
-                "response_time": "Время (сек)",
-                "question_category": "Категория",
-                "user_mark": "Оценка"
-            }),
-            use_container_width=True
+            df_to_show,
+            use_container_width=True,
+            column_config=final_config
         )
 
     # --- Категории с высоким % ошибок ---

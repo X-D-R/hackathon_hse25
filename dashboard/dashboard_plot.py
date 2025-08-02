@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from scipy.stats import linregress
 
 try:
     locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
@@ -374,7 +373,7 @@ class Plots:
         show_plot_with_download_below(fig, "user_mark_counts_by_category")
 
 
-def plot_metric_trend_over_time(df: pd.DataFrame, column: str, inverse=True, height=160, epsilon=0.01, window=5):
+def plot_metric_trend_over_time(df: pd.DataFrame, column: str, color=None, inverse=True, height=160, epsilon=0.01, window=5):
     if df.empty or column not in df.columns or "time_question" not in df.columns:
         st.info("Нет данных для тренда по дням")
         return
@@ -401,19 +400,8 @@ def plot_metric_trend_over_time(df: pd.DataFrame, column: str, inverse=True, hei
         '%d %b').str.replace('.', '', regex=False)
     y = daily["rolling"]
 
-    slope, _, _, _, _ = linregress(range(len(y)), y)
-
-    is_improvement = (
-        abs(slope) >= epsilon and
-        ((slope < 0 and inverse) or (slope > 0 and not inverse))
-    )
-
-    if abs(slope) < epsilon:
+    if color is None:
         color = "#888888"
-    elif is_improvement:
-        color = "#28a745"
-    else:
-        color = "#dc3545"
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
