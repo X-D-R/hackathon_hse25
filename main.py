@@ -26,11 +26,11 @@ def show_loader():
         pipeline()
         duration = time.time() - start_time
         st.write("📦 Парсю новые записи...")
-        time.sleep(3)
+        time.sleep(1)
         st.write(f"✅ Завершено за {duration:.2f} секунд.")
         status.update(label="🎉 Загрузка завершена",
                       state="complete", expanded=True)
-        time.sleep(3)
+        time.sleep(2)
 
     st.rerun()
 
