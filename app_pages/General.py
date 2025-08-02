@@ -162,8 +162,7 @@ def main():
     st.page_link('app_pages/Errors.py',
                  label='Показать ошибки', use_container_width=True, icon="ℹ️")
 
-    df_filtered = sidebar_layout(df) if status['level'] == "green" else sidebar_layout(
-        df[df["conflict_metric"] == 1])
+    df_filtered = sidebar_layout(df)
 
     color_sequence = get_color_palette(status['level'])
     bar_color = get_bar_color(status['level'])
@@ -177,6 +176,10 @@ def main():
     show_metrics(df_filtered, metrics)
 
     st.divider()
+    if status['level'] == "green":
+        st.markdown("### Графики")
+    else:
+        st.markdown("## Конфликтные графики")
     draw_graphs(graphs)
 
 
