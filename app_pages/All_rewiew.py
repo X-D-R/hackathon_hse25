@@ -35,7 +35,8 @@ def main():
     graphs = Plots(filtered_df)
 
     # Заголовок приложения
-    st.markdown("# Мониторинг всего бота")
+    st.markdown("<h1 style='text-align: center;'>Мониторинг качества чат-бота</h1>",
+                unsafe_allow_html=True)
 
     # Кнопка для скачивания отфильтрованных данных в формате JSON и Excel
     st.markdown("### 📥 Экспорт данных")
