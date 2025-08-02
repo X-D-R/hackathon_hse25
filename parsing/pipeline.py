@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 import requests
 
@@ -27,11 +28,11 @@ def fetch_logs():
             data = response.json()
             with open(LOG_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
-            print(f"Логи обновлены. Последнее время: {data.get('time')}")
+            log(f"Логи обновлены. Последнее время: {data.get('time')}")
         else:
-            print(f"Ошибка при запросе логов: {response.status_code}")
+            log(f"Ошибка при запросе логов: {response.status_code}")
     except Exception as e:
-        print(f"Ошибка при загрузке логов: {e}")
+        log(f"Ошибка при загрузке логов: {e}")
 
 
 # --- 2. Основной пайплайн ---
@@ -55,6 +56,11 @@ def save_last_time(time: str):
         f.write(time)
 
 
+def log(msg: str):
+    now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    print(f"{now} {msg}")
+
+
 def pipeline():
     fetch_logs()
 
@@ -62,10 +68,10 @@ def pipeline():
     last_time = load_last_time()
 
     if current_time == last_time:
-        print("⏸ Логи не изменились — парсинг пропущен.")
+        log("⏸ Логи не изменились — парсинг пропущен.")
         return
 
-    print("🔄 Обнаружены изменения — выполняется парсинг...")
+    log("🔄 Обнаружены изменения — выполняется парсинг...")
     analyzer = LogsAnalyzer()
     cache = ParsedCacheManager()
 
@@ -80,7 +86,7 @@ def pipeline():
         parsed_count += 1
 
     if parsed_count == 0:
-        print("✅ Все записи уже были обработаны.")
+        log("✅ Все записи уже были обработаны.")
     else:
         cache.save()
         all_data = cache.get_all()
@@ -88,6 +94,6 @@ def pipeline():
             ".json", ""), extension="json")
         analyzer.export_data(all_data, RESULT_PATH.replace(
             ".json", ""), extension="xlsx")
-        print(f"✅ Добавлено новых записей: {parsed_count}")
+        log(f"✅ Добавлено новых записей: {parsed_count}")
 
     save_last_time(current_time)

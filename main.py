@@ -4,7 +4,7 @@ import time
 
 import streamlit as st
 
-from parsing import pipeline
+from parsing import log, pipeline
 
 REQUIRED_FILES = [
     "data/result.json",
@@ -38,12 +38,12 @@ def show_loader():
 def run_pipeline_async():
     while True:
         try:
-            print("Старт фонового парсинга...")
+            log("Старт фонового парсинга...")
             start = time.time()
             pipeline()
-            print(f"✅ Парсинг завершён за {time.time() - start:.2f} сек.")
+            log(f"✅ Парсинг завершён за {time.time() - start:.2f} сек.")
         except Exception as e:
-            print(f"⚠️ Ошибка при выполнении pipeline: {e}")
+            log(f"⚠️ Ошибка при выполнении pipeline: {e}")
         time.sleep(60)
 
 

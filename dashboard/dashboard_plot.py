@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from scipy.stats import linregress
 
 try:
     locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
