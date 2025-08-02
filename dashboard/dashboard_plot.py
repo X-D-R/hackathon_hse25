@@ -340,25 +340,38 @@ class Plots:
         if self.data.empty or "question_category" not in self.data.columns or "user_mark" not in self.data.columns:
             return st.info("Нет данных для оценки по категориям")
 
-        grouped = self.data.groupby("question_category")[
-            "user_mark"].mean().reset_index()
-        grouped["user_mark"] = grouped["user_mark"].round(2)
+        df_copy = self.data.copy()
 
-        grouped = grouped.sort_values(by="user_mark", ascending=False)
+        grouped = df_copy.groupby("question_category")["user_mark"].agg(
+            good=lambda x: (x == 1).sum(),
+            bad=lambda x: (x == -1).sum()
+        ).reset_index()
 
-        fig = px.bar(
-            grouped,
-            x="user_mark",
-            y="question_category",
-            orientation="h",
-            text_auto=True,
-            labels={'question_category': '', 'user_mark': 'Средняя оценка'},
-            color_discrete_sequence=self.color_sequence,
+        melted = grouped.melt(
+            id_vars="question_category",
+            value_vars=["good", "bad"],
+            var_name="Тип оценки",
+            value_name="Количество"
         )
 
-        fig.update_layout(yaxis=dict(categoryorder="total ascending"))
+        melted["Тип оценки"] = melted["Тип оценки"].map({
+            "good": "Положительные",
+            "bad": "Отрицательные"
+        })
 
-        show_plot_with_download_below(fig, "avg_user_mark_by_category")
+        fig = px.bar(
+            melted,
+            x="question_category",
+            y="Количество",
+            color="Тип оценки",
+            text_auto=True,
+            labels={"question_category": ""},
+            color_discrete_sequence=self.color_sequence
+        )
+
+        fig.update_layout(xaxis=dict(categoryorder="total descending"))
+
+        show_plot_with_download_below(fig, "user_mark_counts_by_category")
 
 
 def plot_metric_trend_over_time(df: pd.DataFrame, column: str, inverse=True, height=160, epsilon=0.01, window=5):

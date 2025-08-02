@@ -132,7 +132,7 @@ def draw_graphs(graphs):
         graphs.plot_response_time_by_category()
 
     with col3:
-        st.subheader("Среднее оценка по категориям")
+        st.subheader("Количество оценок по категориям")
         graphs.plot_avg_user_mark_by_category()
 
 
