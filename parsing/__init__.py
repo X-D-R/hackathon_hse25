@@ -1,1 +1,1 @@
-from .pipeline import pipeline, log
+from .pipeline import pipeline

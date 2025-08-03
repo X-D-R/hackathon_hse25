@@ -1,11 +1,28 @@
 import json
 import os
-from datetime import datetime
+import sys
 
 import requests
+from loguru import logger
 
 from .parsed_data_cache import ParsedCacheManager
 from .parsing_json import LogsAnalyzer
+
+logger.remove()
+
+logger.add(
+    sys.stdout,
+    format="{time:HH:mm:ss} | {level: <7}| {message}",
+    level="INFO"
+)
+
+logger.add(
+    "../logs/pipeline.log",
+    rotation="00:00",
+    enqueue=True,
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level: <7} | {message}",
+    retention="1 month",
+)
 
 FILE_PATH = 'data/'
 LOG_PATH = f"{FILE_PATH}log3.json"
@@ -28,11 +45,11 @@ def fetch_logs():
             data = response.json()
             with open(LOG_PATH, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
-            log(f"Логи обновлены. Последнее время: {data.get('time')}")
+            logger.info(f"Логи обновлены. Последнее время: {data.get('time')}")
         else:
-            log(f"Ошибка при запросе логов: {response.status_code}")
+            logger.warning(f"Ошибка при запросе логов: {response.status_code}")
     except Exception as e:
-        log(f"Ошибка при загрузке логов: {e}")
+        logger.exception(f"Ошибка при загрузке логов: {e}")
 
 
 # --- 2. Основной пайплайн ---
@@ -56,11 +73,6 @@ def save_last_time(time: str):
         f.write(time)
 
 
-def log(msg: str):
-    now = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-    print(f"{now} {msg}")
-
-
 def pipeline():
     fetch_logs()
 
@@ -68,10 +80,10 @@ def pipeline():
     last_time = load_last_time()
 
     if current_time == last_time:
-        log("⏸ Логи не изменились — парсинг пропущен.")
+        logger.info("⏸ Логи не изменились — парсинг пропущен.")
         return
 
-    log("🔄 Обнаружены изменения — выполняется парсинг...")
+    logger.info("🔄 Обнаружены изменения — выполняется парсинг...")
     analyzer = LogsAnalyzer()
     cache = ParsedCacheManager()
 
@@ -86,12 +98,12 @@ def pipeline():
         parsed_count += 1
 
     if parsed_count == 0:
-        log("✅ Все записи уже были обработаны.")
+        logger.success("✅ Все записи уже были обработаны.")
     else:
         cache.save()
         all_data = cache.get_all()
         analyzer.export_data(all_data, RESULT_PATH.replace(
             ".json", ""), extension="json")
-        log(f"✅ Добавлено новых записей: {parsed_count}")
+        logger.success(f"✅ Добавлено новых записей: {parsed_count}")
 
     save_last_time(current_time)

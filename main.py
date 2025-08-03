@@ -1,10 +1,12 @@
 import os
+import sys
 import threading
 import time
 
 import streamlit as st
+from loguru import logger
 
-from parsing import log, pipeline
+from parsing import pipeline
 
 REQUIRED_FILES = [
     "data/result.json",
@@ -13,6 +15,22 @@ REQUIRED_FILES = [
 ]
 
 APP_PAGES = 'app_pages'
+
+logger.remove()
+
+logger.add(
+    sys.stdout,
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level: <7} | {message}",
+    level="INFO"
+)
+
+logger.add(
+    "logs/pipeline.log",
+    rotation="00:00",
+    enqueue=True,
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level: <7} | {message}",
+    retention="1 month",
+)
 
 
 def show_loader():
@@ -38,12 +56,13 @@ def show_loader():
 def run_pipeline_async():
     while True:
         try:
-            log("Старт фонового парсинга...")
+            logger.info("Старт фонового парсинга...")
             start = time.time()
             pipeline()
-            log(f"✅ Парсинг завершён за {time.time() - start:.2f} сек.")
+            logger.success(
+                f"✅ Парсинг завершён за {time.time() - start:.2f} сек.")
         except Exception as e:
-            log(f"⚠️ Ошибка при выполнении pipeline: {e}")
+            logger.exception(f"⚠️ Ошибка при выполнении pipeline: {e}")
         time.sleep(60)
 
 
