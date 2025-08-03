@@ -18,8 +18,12 @@ class LogsAnalyzer:
         return self.clean_text.sub(' ', text).strip()
 
     def _extract_topic_tags(self, text: str):
-        topic_tag_pattern = r"'([^']+)'(?=\s*,|\s*\])"
-        tags = re.findall(topic_tag_pattern, text)
+        topic_tag_pattern = r"'tags'\s*:\s*\[([^\]]+)\]"
+        match = re.search(topic_tag_pattern, text)
+        if not match:
+            return []
+        tags_pattern = r"'([^']+)'"
+        tags = re.findall(tags_pattern, match.group(1))
         return tags
 
     def _extract_urls(self, text: str):
@@ -47,15 +51,6 @@ class LogsAnalyzer:
         naive_text_fluency = metric_obj.naive_text_fluency(answer)
         faithfulness_score = metric_obj.faithfulness_score(context, answer)
         question = self._clean_text(item['chat_history']['old_questions'][0])
-        user_filters = item['user_filters']
-        question_filters = item['question_filters']
-        context_filters = self._extract_topic_tags(
-            " ".join(item['chat_history']['old_contexts']))
-        context_urls = self._extract_urls(
-            item['chat_history']['old_contexts'][0])
-        question_length = len(question.split())
-        context_count = item['chat_history']['old_contexts'][0].count(
-            "Document")
         if "Размышления модели" in item:
             reasoning = item["Размышления модели"]
             relevance = item["Релевантность контекста"]
@@ -70,18 +65,18 @@ class LogsAnalyzer:
             'education_level': item['Уровень образования'],
             'question_category': item['Категория вопроса'],
             'user_question': question,
-            'user_filters': user_filters,
-            'question_filters': question_filters,
-            'context_filters': context_filters,
+            'user_filters': item['user_filters'],
+            'question_filters': item['question_filters'],
+            'context_filters': self._extract_topic_tags(" ".join(item['chat_history']['old_contexts'])),
             'answer': answer,
             'user_mark': 1 if item['Оценка пользователя'] == "+" else -1 if item['Оценка пользователя'] == "-" else 0,
             'contexts': context,
             'time_question': item['Дата вопроса'],
 
             # Дополнительные данные
-            'context_urls': context_urls,
-            'question_length': question_length,
-            'context_count': context_count,
+            'context_urls': self._extract_urls(item['chat_history']['old_contexts'][0]),
+            'question_length': len(question.split()),
+            'context_count': item['chat_history']['old_contexts'][0].count("Document"),
             'answer_length': len(answer.split()),
             'contains_links': bool('http' in answer),
             'reasoning': reasoning,
@@ -100,8 +95,8 @@ class LogsAnalyzer:
             'answer_correctness_literal': metric_obj.answer_correctness_literal(context, answer),
             'answer_correctness_neural': metric_obj.answer_correctness_neural(context, answer),
             'answer_relevance': metric_obj.answer_relevance(question, answer),
-            'jaccard_similarity': metric_obj.jaccard_similarity(set(question_filters), set(context_filters)),
-            'cosine_tag_answer': metric_obj.cosine_tag_answer("".join(question_filters), answer),
+            # 'jaccard_similarity': metric_obj.jaccard_similarity(set(question_filters), set(context_filters)),
+            # 'cosine_tag_answer': metric_obj.cosine_tag_answer("".join(question_filters), answer),
             'relevance': relevance,
         }
 
