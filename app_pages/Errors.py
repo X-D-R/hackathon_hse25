@@ -1,0 +1,219 @@
+import pandas as pd
+import streamlit as st
+from streamlit import column_config as cc
+from streamlit_autorefresh import st_autorefresh
+
+from dashboard import load_data, process_data
+from dashboard.alerts import get_system_alert_status, render_system_alert
+
+
+def main():
+    time = 20
+    time_refresh = 60
+    st_autorefresh(interval=time_refresh * 1000, key="datarefresh")
+    st.logo('logo.svg', size='large', link="")
+
+    st.title("Системные сбои и отклонения")
+
+    data = load_data("data/result.json")
+    if not data:
+        st.warning("Нет данных.")
+        st.stop()
+
+    df = process_data(data)
+    if df.empty:
+        st.warning("Невозможно обработать данные.")
+        st.stop()
+
+    status = get_system_alert_status(df)
+    render_system_alert(status)
+
+    all_view(df, status)
+    st.divider()
+    st.subheader("🛠 Подозрительные случаи")
+
+    # --- Классификация кейсов ---
+    long_answers = df[df["response_time"] > time]
+    empty_responses = df[df["answer"].str.strip(
+    ) == "Сервер не отвечает, пожалуйста, попробуйте позже."]
+    short_responses = df[
+        (df["answer"].str.len() < 30) |
+        (df["answer"].str.split().str.len() < 5) |
+        (df["answer"].str.strip().str.lower().isin([
+            "да", "нет", "не знаю", "не понял", "ок", "?", "не уверен"
+        ]))
+    ]
+
+    low_mark = df[df["user_mark"] < 0]
+
+    cases = []
+
+    if len(long_answers):
+        cases.append({
+            "title": f"⏱ Долгое время генерации (>{time} сек)",
+            "df": long_answers[["user_question", "answer", "response_time", 'question_category', "time_question"]].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "response_time": "Время (сек)",
+                "question_category": "Категория",
+                "time_question": "Время запроса",
+            }),
+            "count": len(long_answers)
+        })
+
+    if len(empty_responses):
+        cases.append({
+            "title": "📭 Пустой ответ модели",
+            "df": empty_responses[["user_question", "answer", 'question_category', "time_question"]].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "question_category": "Категория",
+                "time_question": "Время запроса",
+            }),
+            "count": len(empty_responses)
+        })
+
+    if len(short_responses):
+        cases.append({
+            "title": "✂️ Слишком короткий ответ (< 3 слов)",
+            "df": short_responses[["user_question", "answer", 'question_category', "time_question"]].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "question_category": "Категория",
+                "time_question": "Время запроса",
+            }),
+            "count": len(short_responses)
+        })
+
+    if len(low_mark):
+        cases.append({
+            "title": "⚠️ Низкая оценка",
+            "df": low_mark[["user_question", "answer", "user_mark", 'question_category', "time_question"]].rename(columns={
+                "user_question": "Вопрос",
+                "answer": "Ответ",
+                "question_category": "Категория",
+                "user_mark": "Оценка",
+                "time_question": "Время запроса",
+            }),
+            "count": len(low_mark)
+        })
+
+    for i, case in enumerate(cases):
+        with st.expander(f"{case['title']} (Найдено: {case['count']})", expanded=True):
+            df_to_show = case["df"]
+
+            if "Время запроса" in df_to_show.columns:
+                df_to_show["Время запроса"] = pd.to_datetime(
+                    df_to_show["Время запроса"]).dt.strftime("%d.%m.%Y %H:%M:%S")
+
+            if 'Категория' in df_to_show.columns:
+                cats = df_to_show['Категория'].dropna().unique().tolist()
+                selected = st.multiselect(
+                    label=" ", options=cats, default=cats, key=f"cat_{i}"
+                )
+                df_to_show = df_to_show[df_to_show["Категория"].isin(selected)]
+
+            # Конфиг колонок: фиксируем "Вопрос" и "Ответ", остальные авто
+            fixed_config = {
+                "Вопрос": cc.TextColumn(width="medium"),
+                "Ответ": cc.TextColumn(width="medium")
+            }
+            auto_config = {
+                col: cc.Column() for col in df_to_show.columns if col not in fixed_config
+            }
+            final_config = {**fixed_config, **auto_config}
+
+            st.dataframe(
+                df_to_show,
+                use_container_width=True,
+                column_config=final_config
+            )
+
+
+def all_view(df, status):
+    conflicts = status['conflicts']
+
+    st.subheader('🔍 Подробнее: подозрительные ответы')
+    if conflicts == 0:
+        st.success("*Нет подозрительных ответов.*")
+    else:
+        suspicious_df = df[df["conflict_metric"] == 1][
+            ["user_question", "answer", "question_category",
+                "response_time", "user_mark", "time_question"]
+        ].reset_index(drop=True)
+
+        # --- Фильтр по категории ---
+        available_cats = suspicious_df["question_category"].dropna(
+        ).unique().tolist()
+        selected_cats = st.multiselect(
+            label=' ', options=available_cats, default=available_cats, key="filter_cats_allview")
+        suspicious_df = suspicious_df[suspicious_df["question_category"].isin(
+            selected_cats)]
+
+        df_to_show = suspicious_df.rename(columns={
+            "user_question": "Вопрос",
+            "answer": "Ответ",
+            "response_time": "Время (сек)",
+            "question_category": "Категория",
+            "user_mark": "Оценка",
+            "time_question": "Время запроса",
+        })
+
+        if "Время запроса" in df_to_show.columns:
+            df_to_show["Время запроса"] = pd.to_datetime(
+                df_to_show["Время запроса"]).dt.strftime("%d.%m.%Y %H:%M:%S")
+
+        fixed_config = {
+            "Вопрос": cc.TextColumn(width="medium"),
+            "Ответ": cc.TextColumn(width="medium")
+        }
+        auto_config = {
+            col: cc.Column() for col in df_to_show.columns if col not in fixed_config
+        }
+        final_config = {**fixed_config, **auto_config}
+
+        st.dataframe(
+            df_to_show,
+            use_container_width=True,
+            column_config=final_config
+        )
+
+    # --- Категории с высоким % ошибок ---
+    st.markdown("### 📌 Подозрительные категории")
+
+    if conflicts == 0:
+        st.success("Нет категорий с превышением порога.")
+    else:
+        suspicious = (
+            df[df["conflict_metric"] == 1]
+            .groupby("question_category")
+            .size()
+            .sort_values(ascending=False)
+            .reset_index(name="count")
+        )
+        total_per_cat = (
+            df.groupby("question_category").size().reset_index(name="total")
+        )
+        merged = suspicious.merge(total_per_cat, on="question_category")
+        merged["percent"] = round(merged["count"] / merged["total"] * 100, 1)
+
+        # --- Настраиваемый порог ---
+        threshold = st.slider(
+            "Порог процента подозрительных ответов", min_value=0, max_value=100, value=20)
+        merged = merged[merged["percent"] > threshold]
+
+        if merged.empty:
+            st.success("Нет категорий с высоким уровнем конфликтов.")
+        else:
+            st.warning(
+                "Обнаружены категории с повышенным уровнем подозрительных ответов:")
+            st.dataframe(
+                merged.rename(columns={"count": "Проблемных",
+                                       "total": "Всего",
+                                       "percent": "Процент",
+                                       "question_category": "Категория"
+                                       }),
+                use_container_width=True)
+
+
+main()
